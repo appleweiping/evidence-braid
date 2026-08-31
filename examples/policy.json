@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "policy_id": "operations-demo-v1",
+  "default_source_reliability": 0.7,
+  "sources": {
+    "acoustic-7": {
+      "reliability": 0.82
+    },
+    "camera-north": {
+      "reliability": 0.94
+    },
+    "camera-relay": {
+      "reliability": 0.75
+    },
+    "dispatch-feed": {
+      "reliability": 0.99
+    },
+    "loop-sensor-4": {
+      "reliability": 0.98
+    },
+    "operator-12": {
+      "reliability": 0.96
+    }
+  },
+  "decay": {
+    "default_half_life_seconds": 300,
+    "modality_half_life_seconds": {
+      "sensor": 600,
+      "vision": 180
+    },
+    "max_future_skew_seconds": 2
+  },
+  "claims": {
+    "emergency_response_needed": {
+      "support_threshold": 0.75,
+      "contradiction_threshold": 0.8,
+      "min_margin": 0.08,
+      "quorum": 1,
+      "min_sources": 1,
+      "min_modalities": 1,
+      "min_evidence_confidence": 0.2
+    },
+    "road_obstruction": {
+      "support_threshold": 0.78,
+      "contradiction_threshold": 0.82,
+      "min_margin": 0.12,
+      "quorum": 2,
+      "min_sources": 2,
+      "min_modalities": 2,
+      "min_evidence_confidence": 0.2
+    },
+    "secondary_lane_blocked": {
+      "support_threshold": 0.65,
+      "contradiction_threshold": 0.8,
+      "min_margin": 0.1,
+      "quorum": 2,
+      "min_sources": 2,
+      "min_modalities": 1,
+      "min_evidence_confidence": 0.2
+    }
+  }
+}

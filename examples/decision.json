@@ -1,0 +1,274 @@
+{
+  "considered_event_count": 8,
+  "decisions": [
+    {
+      "claim": "emergency_response_needed",
+      "contradict": {
+        "gate_passed": true,
+        "group_ids": [
+          "event:response-dispatch-31"
+        ],
+        "qualifying_groups": 1,
+        "qualifying_modalities": [
+          "sensor"
+        ],
+        "qualifying_sources": [
+          "dispatch-feed"
+        ],
+        "score": 0.903464318825
+      },
+      "correlations": [
+        {
+          "effective_confidence": 0.903464318825,
+          "group_id": "event:response-dispatch-31",
+          "representative_event_id": "response-dispatch-31",
+          "signal": "contradict",
+          "suppressed_event_ids": []
+        },
+        {
+          "effective_confidence": 0.462579416828,
+          "group_id": "event:response-operator-8",
+          "representative_event_id": "response-operator-8",
+          "signal": "support",
+          "suppressed_event_ids": []
+        }
+      ],
+      "margin": -0.440884901997,
+      "outcome": "reject",
+      "reason": "contradiction_threshold_and_independence_gates_met",
+      "support": {
+        "gate_passed": true,
+        "group_ids": [
+          "event:response-operator-8"
+        ],
+        "qualifying_groups": 1,
+        "qualifying_modalities": [
+          "text"
+        ],
+        "qualifying_sources": [
+          "operator-12"
+        ],
+        "score": 0.462579416828
+      },
+      "trace": [
+        {
+          "age_seconds": 7.0,
+          "claim": "emergency_response_needed",
+          "correlation_group": null,
+          "decay_factor": 0.99194589243,
+          "effective_confidence": 0.903464318825,
+          "event_id": "response-dispatch-31",
+          "modality": "sensor",
+          "raw_confidence": 0.92,
+          "signal": "contradict",
+          "source": "dispatch-feed",
+          "source_reliability": 0.99
+        },
+        {
+          "age_seconds": 16.0,
+          "claim": "emergency_response_needed",
+          "correlation_group": null,
+          "decay_factor": 0.963707118392,
+          "effective_confidence": 0.462579416828,
+          "event_id": "response-operator-8",
+          "modality": "text",
+          "raw_confidence": 0.5,
+          "signal": "support",
+          "source": "operator-12",
+          "source_reliability": 0.96
+        }
+      ]
+    },
+    {
+      "claim": "road_obstruction",
+      "contradict": {
+        "gate_passed": false,
+        "group_ids": [
+          "event:road-loop-919"
+        ],
+        "qualifying_groups": 1,
+        "qualifying_modalities": [
+          "sensor"
+        ],
+        "qualifying_sources": [
+          "loop-sensor-4"
+        ],
+        "score": 0.773206440323
+      },
+      "correlations": [
+        {
+          "effective_confidence": 0.673354299078,
+          "group_id": "event:road-audio-18",
+          "representative_event_id": "road-audio-18",
+          "signal": "support",
+          "suppressed_event_ids": []
+        },
+        {
+          "effective_confidence": 0.773206440323,
+          "group_id": "event:road-loop-919",
+          "representative_event_id": "road-loop-919",
+          "signal": "contradict",
+          "suppressed_event_ids": []
+        },
+        {
+          "effective_confidence": 0.784845032664,
+          "group_id": "group:north-frame-42",
+          "representative_event_id": "road-camera-42",
+          "signal": "support",
+          "suppressed_event_ids": [
+            "road-relay-42"
+          ]
+        }
+      ],
+      "margin": 0.156514114565,
+      "outcome": "escalate",
+      "reason": "support_threshold_and_independence_gates_met",
+      "support": {
+        "gate_passed": true,
+        "group_ids": [
+          "event:road-audio-18",
+          "group:north-frame-42"
+        ],
+        "qualifying_groups": 2,
+        "qualifying_modalities": [
+          "audio",
+          "vision"
+        ],
+        "qualifying_sources": [
+          "acoustic-7",
+          "camera-north"
+        ],
+        "score": 0.929720554888
+      },
+      "trace": [
+        {
+          "age_seconds": 20.0,
+          "claim": "road_obstruction",
+          "correlation_group": null,
+          "decay_factor": 0.95484160391,
+          "effective_confidence": 0.673354299078,
+          "event_id": "road-audio-18",
+          "modality": "audio",
+          "raw_confidence": 0.86,
+          "signal": "support",
+          "source": "acoustic-7",
+          "source_reliability": 0.82
+        },
+        {
+          "age_seconds": 28.0,
+          "claim": "road_obstruction",
+          "correlation_group": "north-frame-42",
+          "decay_factor": 0.897786585065,
+          "effective_confidence": 0.784845032664,
+          "event_id": "road-camera-42",
+          "modality": "vision",
+          "raw_confidence": 0.93,
+          "signal": "support",
+          "source": "camera-north",
+          "source_reliability": 0.94
+        },
+        {
+          "age_seconds": 12.0,
+          "claim": "road_obstruction",
+          "correlation_group": null,
+          "decay_factor": 0.986232704493,
+          "effective_confidence": 0.773206440323,
+          "event_id": "road-loop-919",
+          "modality": "sensor",
+          "raw_confidence": 0.8,
+          "signal": "contradict",
+          "source": "loop-sensor-4",
+          "source_reliability": 0.98
+        },
+        {
+          "age_seconds": 28.0,
+          "claim": "road_obstruction",
+          "correlation_group": "north-frame-42",
+          "decay_factor": 0.897786585065,
+          "effective_confidence": 0.599272545531,
+          "event_id": "road-relay-42",
+          "modality": "vision",
+          "raw_confidence": 0.89,
+          "signal": "support",
+          "source": "camera-relay",
+          "source_reliability": 0.75
+        }
+      ]
+    },
+    {
+      "claim": "secondary_lane_blocked",
+      "contradict": {
+        "gate_passed": false,
+        "group_ids": [],
+        "qualifying_groups": 0,
+        "qualifying_modalities": [],
+        "qualifying_sources": [],
+        "score": 0.0
+      },
+      "correlations": [
+        {
+          "effective_confidence": 0.782896410783,
+          "group_id": "group:lane-frame-11",
+          "representative_event_id": "lane-camera-11",
+          "signal": "support",
+          "suppressed_event_ids": [
+            "lane-relay-11"
+          ]
+        }
+      ],
+      "margin": 0.782896410783,
+      "outcome": "review",
+      "reason": "support_score_met_but_independence_gate_failed",
+      "support": {
+        "gate_passed": false,
+        "group_ids": [
+          "group:lane-frame-11"
+        ],
+        "qualifying_groups": 1,
+        "qualifying_modalities": [
+          "vision"
+        ],
+        "qualifying_sources": [
+          "camera-north"
+        ],
+        "score": 0.782896410783
+      },
+      "trace": [
+        {
+          "age_seconds": 23.0,
+          "claim": "secondary_lane_blocked",
+          "correlation_group": "lane-frame-11",
+          "decay_factor": 0.915240134186,
+          "effective_confidence": 0.782896410783,
+          "event_id": "lane-camera-11",
+          "modality": "vision",
+          "raw_confidence": 0.91,
+          "signal": "support",
+          "source": "camera-north",
+          "source_reliability": 0.94
+        },
+        {
+          "age_seconds": 23.0,
+          "claim": "secondary_lane_blocked",
+          "correlation_group": "lane-frame-11",
+          "decay_factor": 0.915240134186,
+          "effective_confidence": 0.617787090576,
+          "event_id": "lane-relay-11",
+          "modality": "vision",
+          "raw_confidence": 0.9,
+          "signal": "support",
+          "source": "camera-relay",
+          "source_reliability": 0.75
+        }
+      ]
+    }
+  ],
+  "digest": "sha256:bd5d7d6e53b6c57a5f951433a0b0f0ad0c6952b683277f8a94b06492bdd255a3",
+  "evaluated_at": "2026-08-31T12:00:00Z",
+  "input_event_count": 9,
+  "pending_event_ids": [
+    "late-operator-note"
+  ],
+  "policy_id": "operations-demo-v1",
+  "schema_version": 1
+}

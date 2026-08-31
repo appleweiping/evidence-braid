@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Evidence Braid report · operations-demo-v1</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color:#172033; }
+    * { box-sizing:border-box }
+    body { margin:0; background:#f4f6fa; }
+    main { width:min(1060px, calc(100% - 32px)); margin:48px auto 80px; }
+    header { padding:28px 32px; color:white; border-radius:18px; background:linear-gradient(120deg,#172554,#312e81); }
+    header p { color:#dbeafe; margin:8px 0 0; }
+    h1,h2,p { margin-top:0 } h1 { margin-bottom:0; letter-spacing:-.03em } h2 { margin-bottom:0 }
+    .meta { display:flex; gap:24px; flex-wrap:wrap; margin-top:24px; font-size:.9rem }
+    .decision { margin-top:20px; padding:28px 32px; border:1px solid #e2e8f0; border-radius:18px; background:white; box-shadow:0 6px 24px #1725540c; }
+    .decision-head { display:flex; align-items:center; justify-content:space-between; gap:16px }
+    .eyebrow { margin:0 0 5px; color:#64748b; font-size:.76rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase }
+    .badge { color:white; border-radius:999px; padding:7px 12px; font-size:.76rem; font-weight:800; letter-spacing:.06em }
+    .reason { color:#64748b; margin:10px 0 22px }
+    .score-row { display:grid; grid-template-columns:92px 1fr 60px; gap:12px; align-items:center; margin:12px 0 }
+    .bar { height:10px; background:#edf2f7; overflow:hidden; border-radius:99px } .bar i { display:block; height:100%; border-radius:99px }
+    dl { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:24px 0 } dl div { padding:12px; background:#f8fafc; border-radius:10px }
+    dt { color:#64748b; font-size:.78rem } dd { margin:4px 0 0; font-weight:750 }
+    details { border-top:1px solid #e2e8f0; padding-top:18px } summary { cursor:pointer; font-weight:700 }
+    .table-wrap { overflow:auto; margin-top:14px } table { width:100%; border-collapse:collapse; font-size:.84rem }
+    th,td { text-align:left; padding:9px; border-bottom:1px solid #e2e8f0 } th { color:#475569 } .empty { text-align:center;color:#64748b }
+    footer { text-align:center; color:#64748b; margin-top:24px; font-size:.82rem }
+    @media(max-width:680px) { dl { grid-template-columns:1fr 1fr } .decision,header { padding:22px } }
+  </style>
+</head>
+<body><main>
+  <header><h1>Evidence Braid</h1><p>Deterministic decision report</p>
+    <div class="meta"><span>Policy <strong>operations-demo-v1</strong></span>
+      <span>Evaluated <strong>2026-08-31T12:00:00Z</strong></span>
+      <span>Evidence <strong>8/9</strong></span></div>
+  </header>
+
+    <section class="decision">
+      <div class="decision-head">
+        <div><p class="eyebrow">Claim</p><h2>emergency_response_needed</h2></div>
+        <span class="badge" style="background:#067647">REJECT</span>
+      </div>
+      <p class="reason">contradiction threshold and independence gates met</p>
+
+      <div class="score-row">
+        <span>Support</span>
+        <div class="bar"><i style="width:46.26%;background:#2563eb"></i></div>
+        <strong>0.463</strong>
+      </div>
+
+      <div class="score-row">
+        <span>Contradict</span>
+        <div class="bar"><i style="width:90.35%;background:#7c3aed"></i></div>
+        <strong>0.903</strong>
+      </div>
+      <dl>
+        <div><dt>Margin</dt><dd>-0.441</dd></div>
+        <div><dt>Support groups</dt><dd>1</dd></div>
+        <div><dt>Sources</dt><dd>1</dd></div>
+        <div><dt>Modalities</dt><dd>1</dd></div>
+      </dl>
+      <details><summary>Decision trace (2 events)</summary>
+        <div class="table-wrap"><table><thead><tr><th>Event</th><th>Modality</th><th>Source</th>
+        <th>Signal</th><th>Raw</th><th>Decay</th><th>Effective</th></tr></thead>
+        <tbody><tr><td><code>response-dispatch-31</code></td><td>sensor</td><td>dispatch-feed</td><td>contradict</td><td>0.920</td><td>0.992</td><td>0.903</td></tr><tr><td><code>response-operator-8</code></td><td>text</td><td>operator-12</td><td>support</td><td>0.500</td><td>0.964</td><td>0.463</td></tr></tbody></table></div>
+      </details>
+    </section>
+    <section class="decision">
+      <div class="decision-head">
+        <div><p class="eyebrow">Claim</p><h2>road_obstruction</h2></div>
+        <span class="badge" style="background:#b42318">ESCALATE</span>
+      </div>
+      <p class="reason">support threshold and independence gates met</p>
+
+      <div class="score-row">
+        <span>Support</span>
+        <div class="bar"><i style="width:92.97%;background:#2563eb"></i></div>
+        <strong>0.930</strong>
+      </div>
+
+      <div class="score-row">
+        <span>Contradict</span>
+        <div class="bar"><i style="width:77.32%;background:#7c3aed"></i></div>
+        <strong>0.773</strong>
+      </div>
+      <dl>
+        <div><dt>Margin</dt><dd>0.157</dd></div>
+        <div><dt>Support groups</dt><dd>2</dd></div>
+        <div><dt>Sources</dt><dd>2</dd></div>
+        <div><dt>Modalities</dt><dd>2</dd></div>
+      </dl>
+      <details><summary>Decision trace (4 events)</summary>
+        <div class="table-wrap"><table><thead><tr><th>Event</th><th>Modality</th><th>Source</th>
+        <th>Signal</th><th>Raw</th><th>Decay</th><th>Effective</th></tr></thead>
+        <tbody><tr><td><code>road-audio-18</code></td><td>audio</td><td>acoustic-7</td><td>support</td><td>0.860</td><td>0.955</td><td>0.673</td></tr><tr><td><code>road-camera-42</code></td><td>vision</td><td>camera-north</td><td>support</td><td>0.930</td><td>0.898</td><td>0.785</td></tr><tr><td><code>road-loop-919</code></td><td>sensor</td><td>loop-sensor-4</td><td>contradict</td><td>0.800</td><td>0.986</td><td>0.773</td></tr><tr><td><code>road-relay-42</code></td><td>vision</td><td>camera-relay</td><td>support</td><td>0.890</td><td>0.898</td><td>0.599</td></tr></tbody></table></div>
+      </details>
+    </section>
+    <section class="decision">
+      <div class="decision-head">
+        <div><p class="eyebrow">Claim</p><h2>secondary_lane_blocked</h2></div>
+        <span class="badge" style="background:#b54708">REVIEW</span>
+      </div>
+      <p class="reason">support score met but independence gate failed</p>
+
+      <div class="score-row">
+        <span>Support</span>
+        <div class="bar"><i style="width:78.29%;background:#2563eb"></i></div>
+        <strong>0.783</strong>
+      </div>
+
+      <div class="score-row">
+        <span>Contradict</span>
+        <div class="bar"><i style="width:0.00%;background:#7c3aed"></i></div>
+        <strong>0.000</strong>
+      </div>
+      <dl>
+        <div><dt>Margin</dt><dd>0.783</dd></div>
+        <div><dt>Support groups</dt><dd>1</dd></div>
+        <div><dt>Sources</dt><dd>1</dd></div>
+        <div><dt>Modalities</dt><dd>1</dd></div>
+      </dl>
+      <details><summary>Decision trace (2 events)</summary>
+        <div class="table-wrap"><table><thead><tr><th>Event</th><th>Modality</th><th>Source</th>
+        <th>Signal</th><th>Raw</th><th>Decay</th><th>Effective</th></tr></thead>
+        <tbody><tr><td><code>lane-camera-11</code></td><td>vision</td><td>camera-north</td><td>support</td><td>0.910</td><td>0.915</td><td>0.783</td></tr><tr><td><code>lane-relay-11</code></td><td>vision</td><td>camera-relay</td><td>support</td><td>0.900</td><td>0.915</td><td>0.618</td></tr></tbody></table></div>
+      </details>
+    </section>
+  <footer>Digest: <code>sha256:bd5d7d6e53b6c57a5f951433a0b0f0ad0c6952b683277f8a94b06492bdd255a3</code></footer>
+</main></body></html>
