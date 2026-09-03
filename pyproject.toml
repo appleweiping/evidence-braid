@@ -48,6 +48,11 @@ packages = ["src/evidence_braid"]
 [tool.pytest.ini_options]
 addopts = "--strict-markers --strict-config"
 testpaths = ["tests"]
+# tests/test_experiments.py imports the repo-root `experiments` package, which is
+# not installed with the distribution. Without this, collection only succeeds when
+# pytest is started as `python -m pytest` (which puts the working directory on
+# sys.path); a bare `pytest` invocation, as used in CI, fails to import it.
+pythonpath = ["."]
 
 [tool.coverage.run]
 branch = true
