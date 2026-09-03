@@ -115,6 +115,35 @@ def test_write_text_wraps_filesystem_error(tmp_path: Path) -> None:
         write_text(tmp_path, "content")
 
 
+def test_write_text_rejects_an_empty_destination() -> None:
+    # An unset shell variable expands to an empty argument, and `Path("")` is
+    # `Path(".")`, so without an explicit check this is reported as a permission
+    # error on the working directory instead of as a bad destination.
+    with pytest.raises(InputFormatError, match="destination path is empty"):
+        write_text("", "content")
+
+
+def test_cli_rejects_an_empty_output_destination(tmp_path: Path) -> None:
+    policy = tmp_path / "policy.json"
+    policy.write_text(json.dumps(policy_dict()), encoding="utf-8")
+    events = tmp_path / "events.jsonl"
+    events.write_text(json.dumps(event_dict()) + "\n", encoding="utf-8")
+
+    exit_code = run(
+        [
+            "evaluate",
+            str(policy),
+            str(events),
+            "--as-of",
+            "2026-08-31T12:00:00Z",
+            "--output",
+            "",
+        ]
+    )
+
+    assert exit_code != 0
+
+
 def test_replay_emits_one_result_per_ingestion_time(make_event) -> None:
     policy = Policy.from_dict(policy_dict())
     events = [

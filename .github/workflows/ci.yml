@@ -42,6 +42,10 @@ jobs:
       - run: ruff format --check .
       - run: pytest --cov=evidence_braid --cov-report=term-missing
       - name: Smoke-test fixed-time evaluation
+        # `$DECISION_OUTPUT` is bash syntax. Without an explicit shell the Windows
+        # runner uses PowerShell, where it expands to nothing and the command runs
+        # with an empty --output.
+        shell: bash
         env:
           DECISION_OUTPUT: ${{ runner.temp }}/decision.json
         run: evidence-braid evaluate examples/policy.json examples/events.jsonl --as-of 2026-08-31T12:00:00Z --output "$DECISION_OUTPUT"

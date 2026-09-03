@@ -109,6 +109,12 @@ def canonical_json(value: Any, *, pretty: bool = True) -> str:
 
 
 def write_text(path: str | Path, content: str) -> None:
+    # `Path("")` silently becomes `Path(".")`, so an empty destination — which is
+    # what an unset shell variable expands to — would otherwise be reported as a
+    # permission error on the working directory rather than as the bad argument
+    # it is.
+    if not str(path):
+        raise InputFormatError("cannot write output: destination path is empty")
     destination = Path(path)
     try:
         destination.parent.mkdir(parents=True, exist_ok=True)
