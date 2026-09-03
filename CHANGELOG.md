@@ -3,11 +3,24 @@
 All notable changes are documented here. The project follows Semantic
 Versioning once the first stable release is published.
 
-## Unreleased
+## [Unreleased]
 
-No changes yet.
+## [0.2.0] - 2026-09-01
 
-## 0.1.0 - 2026-08-31
+### Added
+
+- Two transparent comparison baselines: equal-event majority vote and confidence/reliability
+  weighted vote.
+- Dependency-free labeled accuracy, abstention, precision/recall/F1, Brier, ECE, and confusion
+  metrics.
+- A deterministic synthetic baseline, calibration, performance, and replay experiment with a
+  machine-readable environment-qualified reference result.
+- Research limitations, evaluation protocol, compatibility policy, governance, citation metadata,
+  issue forms, pull request template, and dependency update configuration.
+- Stable cross-field validation for baseline decisions, hostile outcome handling, bounded/atomic
+  experiment output, full policy/software provenance, and functional reference-result verification.
+
+## [0.1.0] - 2026-08-31
 
 ### Added
 

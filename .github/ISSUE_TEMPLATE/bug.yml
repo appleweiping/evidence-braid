@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a reproducible decision, replay, interface, or report defect
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Use sanitized synthetic evidence. Report vulnerabilities through a private advisory.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Minimal policy, events, evaluation time, and command
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and observed result
+    validations:
+      required: true
+  - type: checkboxes
+    id: sensitive
+    attributes:
+      label: Data and security check
+      options:
+        - label: I removed secrets, personal data, and evidence I am not authorized to publish.
+          required: true
+        - label: This is not a security disclosure; I will use private vulnerability reporting if it is.
+          required: true

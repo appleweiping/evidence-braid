@@ -1,0 +1,23 @@
+name: Evaluation or semantics proposal
+description: Propose a policy, metric, baseline, dataset, or reproducibility improvement
+title: "[Evaluation]: "
+labels: [evaluation]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Research or operational question
+    validations:
+      required: true
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Proposed data provenance, labels, baselines, metrics, and protocol
+    validations:
+      required: true
+  - type: textarea
+    id: limitations
+    attributes:
+      label: Known limitations and compatibility impact
+    validations:
+      required: true

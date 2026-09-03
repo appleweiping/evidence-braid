@@ -7,6 +7,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from . import __version__
 from .engine import evaluate
 from .errors import EvidenceBraidError, InputFormatError
 from .io import canonical_json, load_events, load_policy, write_text
@@ -20,6 +21,7 @@ def _parser() -> argparse.ArgumentParser:
         prog="evidence-braid",
         description="Evaluate multimodal evidence with a deterministic JSON policy.",
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     evaluate_parser = subparsers.add_parser("evaluate", help="evaluate all evidence at one instant")

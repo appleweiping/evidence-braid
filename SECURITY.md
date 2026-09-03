@@ -37,3 +37,8 @@ so accepted Python API values cannot later fail solely because an administrator
 lowered Python's configurable integer-string safety cap.
 
 The result digest is not a signature and must not be used as proof of origin.
+
+The bundled baselines and metrics accept in-memory validated models and mappings; callers remain
+responsible for byte, event-count, and concurrency limits around evaluation jobs. Synthetic
+benchmark results are not security testing and should not be used to infer denial-of-service
+resistance on deployment hardware.

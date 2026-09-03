@@ -1,0 +1,337 @@
+{
+  "dataset": {
+    "generator_version": 1,
+    "kind": "deterministic_synthetic",
+    "negative_count": 60,
+    "positive_count": 60,
+    "real_world_claim": false,
+    "scenario_count": 120,
+    "seed": 1729,
+    "sha256": "sha256:1ba0453c26899748908e36e717f253c4a05edb1914ae099c93e05c7a0aa97621"
+  },
+  "environment": {
+    "logical_cpu_count": 16,
+    "machine": "AMD64",
+    "operating_system": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "python": "3.14.5",
+    "python_implementation": "CPython"
+  },
+  "evaluation": {
+    "as_of": "2026-08-31T12:00:00Z",
+    "policy_id": "synthetic-evaluation-v1",
+    "policy_schema_version": 1,
+    "policy_sha256": "sha256:ac47767a886d7c1ed64cdb6bcd9950075777544aafa02aa9fd70795715ba4b88"
+  },
+  "generated_at": "2026-09-03T09:20:05.684283Z",
+  "interpretation": "Synthetic software characterization only; no operational accuracy or calibration claim.",
+  "method_semantics": {
+    "evidence_braid": "configured correlation, decay, reliability, threshold, and independence gates",
+    "majority_vote": "one equal vote per visible event; confidence and correlation ignored",
+    "reliability_weighted_vote": "confidence times static reliability; decay, correlation, and gates ignored"
+  },
+  "methods": {
+    "evidence_braid": {
+      "metrics": {
+        "accuracy": 0.816666666667,
+        "brier_score": 0.122580490695,
+        "calibration_bins": [
+          {
+            "count": 22,
+            "lower": 0.0,
+            "mean_probability": 0.0,
+            "observed_positive_rate": 0.0,
+            "upper": 0.1
+          },
+          {
+            "count": 5,
+            "lower": 0.2,
+            "mean_probability": 0.270199882121,
+            "observed_positive_rate": 0.0,
+            "upper": 0.3
+          },
+          {
+            "count": 15,
+            "lower": 0.3,
+            "mean_probability": 0.348790029241,
+            "observed_positive_rate": 0.2,
+            "upper": 0.4
+          },
+          {
+            "count": 13,
+            "lower": 0.4,
+            "mean_probability": 0.454495450444,
+            "observed_positive_rate": 0.230769230769,
+            "upper": 0.5
+          },
+          {
+            "count": 13,
+            "lower": 0.5,
+            "mean_probability": 0.571534606787,
+            "observed_positive_rate": 0.384615384615,
+            "upper": 0.6
+          },
+          {
+            "count": 11,
+            "lower": 0.6,
+            "mean_probability": 0.654308627821,
+            "observed_positive_rate": 1.0,
+            "upper": 0.7
+          },
+          {
+            "count": 14,
+            "lower": 0.7,
+            "mean_probability": 0.723991185264,
+            "observed_positive_rate": 1.0,
+            "upper": 0.8
+          },
+          {
+            "count": 27,
+            "lower": 0.9,
+            "mean_probability": 1.0,
+            "observed_positive_rate": 0.888888888889,
+            "upper": 1.0
+          }
+        ],
+        "confusion_matrix": {
+          "escalate": {
+            "escalate": 54,
+            "reject": 5,
+            "review": 1
+          },
+          "reject": {
+            "escalate": 11,
+            "reject": 44,
+            "review": 5
+          }
+        },
+        "coverage": 0.95,
+        "expected_calibration_error": 0.163233075779,
+        "f1": 0.864,
+        "positive_class": "escalate",
+        "precision": 0.830769230769,
+        "recall": 0.9,
+        "sample_count": 120,
+        "selective_accuracy": 0.859649122807
+      },
+      "prediction_sha256": "b584b94718a5976c5630afd487cf2fc1e5cd91fab79e13d554012af1e6ad2888",
+      "timing": {
+        "max_us_per_operation": 260.566,
+        "median_us_per_operation": 232.945,
+        "min_us_per_operation": 225.9,
+        "p95_us_per_operation": 257.296
+      }
+    },
+    "majority_vote": {
+      "metrics": {
+        "accuracy": 0.783333333333,
+        "brier_score": 0.137731481481,
+        "calibration_bins": [
+          {
+            "count": 22,
+            "lower": 0.0,
+            "mean_probability": 0.0,
+            "observed_positive_rate": 0.0,
+            "upper": 0.1
+          },
+          {
+            "count": 8,
+            "lower": 0.2,
+            "mean_probability": 0.25,
+            "observed_positive_rate": 0.25,
+            "upper": 0.3
+          },
+          {
+            "count": 18,
+            "lower": 0.3,
+            "mean_probability": 0.333333333333,
+            "observed_positive_rate": 0.166666666667,
+            "upper": 0.4
+          },
+          {
+            "count": 9,
+            "lower": 0.5,
+            "mean_probability": 0.5,
+            "observed_positive_rate": 0.444444444444,
+            "upper": 0.6
+          },
+          {
+            "count": 28,
+            "lower": 0.6,
+            "mean_probability": 0.666666666667,
+            "observed_positive_rate": 0.714285714286,
+            "upper": 0.7
+          },
+          {
+            "count": 8,
+            "lower": 0.7,
+            "mean_probability": 0.75,
+            "observed_positive_rate": 0.875,
+            "upper": 0.8
+          },
+          {
+            "count": 27,
+            "lower": 0.9,
+            "mean_probability": 1.0,
+            "observed_positive_rate": 0.888888888889,
+            "upper": 1.0
+          }
+        ],
+        "confusion_matrix": {
+          "escalate": {
+            "escalate": 51,
+            "reject": 5,
+            "review": 4
+          },
+          "reject": {
+            "escalate": 12,
+            "reject": 43,
+            "review": 5
+          }
+        },
+        "coverage": 0.925,
+        "expected_calibration_error": 0.073611111111,
+        "f1": 0.829268292683,
+        "positive_class": "escalate",
+        "precision": 0.809523809524,
+        "recall": 0.85,
+        "sample_count": 120,
+        "selective_accuracy": 0.846846846847
+      },
+      "prediction_sha256": "b09c13aba318fb9fdd20524a0d62f630500bd58c0831936e8acf610c27e74c94",
+      "timing": {
+        "max_us_per_operation": 41.477,
+        "median_us_per_operation": 32.572,
+        "min_us_per_operation": 18.432,
+        "p95_us_per_operation": 39.879
+      }
+    },
+    "reliability_weighted_vote": {
+      "metrics": {
+        "accuracy": 0.85,
+        "brier_score": 0.113297125579,
+        "calibration_bins": [
+          {
+            "count": 22,
+            "lower": 0.0,
+            "mean_probability": 0.0,
+            "observed_positive_rate": 0.0,
+            "upper": 0.1
+          },
+          {
+            "count": 5,
+            "lower": 0.1,
+            "mean_probability": 0.173074225587,
+            "observed_positive_rate": 0.0,
+            "upper": 0.2
+          },
+          {
+            "count": 11,
+            "lower": 0.2,
+            "mean_probability": 0.242601438986,
+            "observed_positive_rate": 0.181818181818,
+            "upper": 0.3
+          },
+          {
+            "count": 10,
+            "lower": 0.3,
+            "mean_probability": 0.34562784137,
+            "observed_positive_rate": 0.2,
+            "upper": 0.4
+          },
+          {
+            "count": 4,
+            "lower": 0.4,
+            "mean_probability": 0.448054549895,
+            "observed_positive_rate": 0.25,
+            "upper": 0.5
+          },
+          {
+            "count": 10,
+            "lower": 0.5,
+            "mean_probability": 0.534104113008,
+            "observed_positive_rate": 0.4,
+            "upper": 0.6
+          },
+          {
+            "count": 8,
+            "lower": 0.6,
+            "mean_probability": 0.657771728699,
+            "observed_positive_rate": 0.625,
+            "upper": 0.7
+          },
+          {
+            "count": 15,
+            "lower": 0.7,
+            "mean_probability": 0.749748183753,
+            "observed_positive_rate": 0.933333333333,
+            "upper": 0.8
+          },
+          {
+            "count": 8,
+            "lower": 0.8,
+            "mean_probability": 0.833746005006,
+            "observed_positive_rate": 1.0,
+            "upper": 0.9
+          },
+          {
+            "count": 27,
+            "lower": 0.9,
+            "mean_probability": 1.0,
+            "observed_positive_rate": 0.888888888889,
+            "upper": 1.0
+          }
+        ],
+        "confusion_matrix": {
+          "escalate": {
+            "escalate": 55,
+            "reject": 5,
+            "review": 0
+          },
+          "reject": {
+            "escalate": 13,
+            "reject": 47,
+            "review": 0
+          }
+        },
+        "coverage": 1.0,
+        "expected_calibration_error": 0.103912564445,
+        "f1": 0.859375,
+        "positive_class": "escalate",
+        "precision": 0.808823529412,
+        "recall": 0.916666666667,
+        "sample_count": 120,
+        "selective_accuracy": 0.85
+      },
+      "prediction_sha256": "13766df57111709d72f54d4274907bf93d0c16a611d2d51903eb6994366467fd",
+      "timing": {
+        "max_us_per_operation": 32.992,
+        "median_us_per_operation": 21.297,
+        "min_us_per_operation": 15.767,
+        "p95_us_per_operation": 32.466
+      }
+    }
+  },
+  "protocol": {
+    "calibration_bins": 10,
+    "repeats": 5,
+    "timer": "time.perf_counter",
+    "warmup_runs": 1
+  },
+  "replay": {
+    "event_count": 80,
+    "final_digest": "sha256:561ee0c5b5b1aac1750022db434a87316f089ed1528de62280ef7957e102d491",
+    "snapshot_count": 80,
+    "timing": {
+      "max_us_per_operation": 1676.69,
+      "median_us_per_operation": 1607.034,
+      "min_us_per_operation": 1584.299,
+      "p95_us_per_operation": 1665.554
+    }
+  },
+  "schema_version": 1,
+  "software": {
+    "name": "evidence-braid",
+    "version": "0.2.0"
+  }
+}

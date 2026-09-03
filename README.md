@@ -254,6 +254,30 @@ UTC `datetime` instances; behavior-overriding subclasses are rejected. Each
 `render_svg(result)` return standalone text; they do not write files or make
 network requests.
 
+## Baselines and labeled metrics
+
+Two deliberately transparent baselines and dependency-free labeled metrics are available for
+evaluation—not as alternative production policies:
+
+```python
+from evidence_braid import classification_metrics, majority_vote, reliability_weighted_vote
+
+majority = majority_vote(policy, events, as_of)
+weighted = reliability_weighted_vote(policy, events, as_of)
+
+metrics = classification_metrics(
+    labels={"case-1": "escalate", "case-2": "reject"},
+    predictions={"case-1": majority[0].outcome, "case-2": "review"},
+    support_probabilities={"case-1": majority[0].support_probability, "case-2": 0.5},
+)
+```
+
+`majority_vote` counts visible events equally. `reliability_weighted_vote` sums confidence times
+static source reliability. Their omissions are intentional and documented so ablation comparisons
+remain interpretable. Metrics include accuracy, coverage, selective accuracy, precision, recall,
+F1, Brier score, fixed-bin expected calibration error, and an abstention-preserving confusion
+matrix. See the [complete evaluation protocol](docs/evaluation.md).
+
 ## Determinism contract
 
 For the same validated policy, event set, and `as_of` instant:
@@ -292,6 +316,26 @@ Known scope boundaries:
 - file and line sizes are not capped by the dependency-free adapters;
 - the HTML report is a portable snapshot, not a dashboard or evidence store.
 
+The repository's checked-in experiment uses generated synthetic labels and cannot establish
+real-world accuracy, fairness, safety, or calibration. Read the
+[research and deployment limitations](docs/research-limitations.md) before interpreting results.
+
+## Reproduce the evaluation
+
+```bash
+python experiments/synthetic_baselines.py \
+  --samples 240 --seed 1729 --repeats 5 --replay-events 80 \
+  --output experiment.json
+```
+
+The result is machine-readable and records dataset and prediction hashes, class counts, metric and
+calibration details, replay characterization, Python/OS/CPU metadata, warmup, repetitions, and
+timing distributions. It also records the software version, fixed evaluation time, generator
+version, and complete canonical policy hash. Output replacement is atomic and experiment sizes have
+documented hard ceilings. Timings characterize only that run. A smaller
+[checked-in reference result](experiments/results/synthetic-baselines-windows-python314.json)
+demonstrates the schema with explicit synthetic-data provenance.
+
 ## Development
 
 ```bash
@@ -299,6 +343,7 @@ python -m pip install -e ".[dev]"
 ruff check .
 ruff format --check .
 pytest --cov=evidence_braid --cov-report=term-missing
+python experiments/synthetic_baselines.py --samples 12 --repeats 3 --replay-events 8
 ```
 
 The test suite covers decay, source reliability, correlation collapse,
@@ -306,8 +351,12 @@ conflicts, stable threshold boundaries, diversity gates, duplicate and
 malformed input, Unicode/report safety, ingestion semantics, prefix-stable
 replay, immutable traces, reports, CLI behavior, and order determinism.
 
-See [`docs/architecture.md`](docs/architecture.md) for design boundaries and
-[`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution workflow.
+See [`docs/architecture.md`](docs/architecture.md) for design boundaries,
+[`docs/compatibility.md`](docs/compatibility.md) for the versioning contract,
+[`docs/governance.md`](docs/governance.md) for decision authority, and
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution workflow. Release verification is
+documented in [`docs/releases.md`](docs/releases.md), and versioned citation metadata is provided
+in [`CITATION.cff`](CITATION.cff).
 
 ## Roadmap
 
@@ -316,6 +365,10 @@ See [`docs/architecture.md`](docs/architecture.md) for design boundaries and
 - Policy comparison that explains why two versions differ.
 - Streaming adapter with explicit snapshot boundaries.
 - Additional report accessibility testing.
+
+## Companion repositories
+
+Evidence Braid is one independent part of a small multimodal tooling suite. [Payload Palette](https://github.com/appleweiping/payload-palette) validates request media, [Frame Quorum](https://github.com/appleweiping/frame-quorum) selects auditable key frames, [Graph Sail](https://github.com/appleweiping/graph-sail) plans heterogeneous DAGs, and [Stream Quilt](https://github.com/appleweiping/stream-quilt) aligns event streams. The repositories have separate contracts and release cycles; no runtime dependency is implied.
 
 ## License
 

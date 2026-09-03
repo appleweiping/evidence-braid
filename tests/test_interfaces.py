@@ -9,6 +9,7 @@ from xml.etree import ElementTree
 import pytest
 from conftest import event_dict, policy_dict
 
+from evidence_braid import __version__
 from evidence_braid.cli import _emit, _emit_error, run
 from evidence_braid.engine import evaluate
 from evidence_braid.errors import InputFormatError, ValidationError
@@ -16,6 +17,13 @@ from evidence_braid.io import canonical_json, load_events, load_json, write_text
 from evidence_braid.models import MAX_ATTRIBUTE_INTEGER_DIGITS, Policy, parse_timestamp
 from evidence_braid.replay import replay
 from evidence_braid.report import render_html, render_svg
+
+
+def test_cli_reports_package_version(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as error:
+        run(["--version"])
+    assert error.value.code == 0
+    assert capsys.readouterr().out == f"evidence-braid {__version__}\n"
 
 
 def test_load_events_skips_blank_lines(tmp_path: Path) -> None:

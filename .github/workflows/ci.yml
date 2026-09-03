@@ -7,9 +7,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -17,12 +23,16 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.11"
           - os: ubuntu-latest
+            python-version: "3.13"
+          - os: ubuntu-latest
             python-version: "3.14"
           - os: windows-latest
             python-version: "3.12"
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -31,7 +41,15 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest --cov=evidence_braid --cov-report=term-missing
-      - run: evidence-braid evaluate examples/policy.json examples/events.jsonl --as-of 2026-08-31T12:00:00Z --output "${{ runner.temp }}/decision.json"
+      - name: Smoke-test fixed-time evaluation
+        env:
+          DECISION_OUTPUT: ${{ runner.temp }}/decision.json
+        run: evidence-braid evaluate examples/policy.json examples/events.jsonl --as-of 2026-08-31T12:00:00Z --output "$DECISION_OUTPUT"
+      - name: Smoke-test synthetic evaluation protocol
+        if: runner.os == 'Linux' && matrix.python-version == '3.14'
+        env:
+          SYNTHETIC_OUTPUT: ${{ runner.temp }}/synthetic-evaluation.json
+        run: python experiments/synthetic_baselines.py --samples 12 --repeats 3 --replay-events 8 --output "$SYNTHETIC_OUTPUT"
       - name: Build distributions
         run: python -m build
       - name: Smoke-test the isolated wheel
@@ -42,3 +60,15 @@ jobs:
           cd /tmp
           /tmp/evidence-braid-wheel/bin/evidence-braid evaluate "$GITHUB_WORKSPACE/examples/policy.json" "$GITHUB_WORKSPACE/examples/events.jsonl" --as-of 2026-08-31T12:00:00Z --output decision-from-wheel.json
           /tmp/evidence-braid-wheel/bin/python -c "import json; assert json.load(open('decision-from-wheel.json', encoding='utf-8'))['policy_id'] == 'operations-demo-v1'"
+
+  gate:
+    name: CI gate
+    if: ${{ always() }}
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every matrix job to succeed
+        env:
+          MATRIX_RESULT: ${{ needs.test.result }}
+        run: test "${MATRIX_RESULT}" = success
