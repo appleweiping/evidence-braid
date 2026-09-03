@@ -9,7 +9,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from math import prod
-from typing import Any
+from typing import Any, TypeVar
 
 from .decay import WeightedEvent, weight_event
 from .errors import ValidationError
@@ -31,13 +31,15 @@ from .models import (
     normalize_datetime,
 )
 
+_ModelT = TypeVar("_ModelT")
+
 
 def _combined_confidence(values: Iterable[float]) -> float:
     """Combine independent confidence without allowing a score above one."""
     return 1.0 - prod(1.0 - _stable_float(value) for value in values)
 
 
-def _model_tuple(value: Any, model_type: type, path: str) -> tuple:
+def _model_tuple(value: Any, model_type: type[_ModelT], path: str) -> tuple[_ModelT, ...]:
     """Validate and snapshot a typed output sequence."""
     if isinstance(value, str | bytes) or not isinstance(value, Sequence):
         raise ValidationError(f"{path} must be a sequence of {model_type.__name__} objects")

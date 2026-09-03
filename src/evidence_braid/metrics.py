@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from math import isfinite
-from typing import Any
+from typing import Any, TypeGuard
 
 from .errors import ValidationError
 from .models import Outcome
 
 _LABELS = (Outcome.ESCALATE, Outcome.REJECT)
 _PREDICTIONS = (*_LABELS, Outcome.REVIEW)
+
+
+def _is_json_number(value: object) -> TypeGuard[int | float]:
+    """Return whether a value is exactly an ``int`` or ``float`` (never ``bool``)."""
+    return type(value) in (int, float)
 
 
 def _outcome(value: object, path: str, *, label: bool) -> Outcome:
@@ -77,7 +82,7 @@ def classification_metrics(
     probabilities: dict[str, float] = {}
     for key in label_keys:
         value = probability_values[key]
-        if type(value) not in (int, float) or not isfinite(value) or not 0 <= value <= 1:
+        if not _is_json_number(value) or not isfinite(value) or not 0 <= value <= 1:
             raise ValidationError(f"support_probabilities.{key} must be finite and in [0, 1]")
         probabilities[key] = float(value)
 

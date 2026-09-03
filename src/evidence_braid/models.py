@@ -13,9 +13,11 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from math import isfinite
 from types import MappingProxyType
-from typing import Any
+from typing import Any, TypeVar
 
 from .errors import ValidationError
+
+_EnumT = TypeVar("_EnumT", bound=StrEnum)
 
 MAX_ATTRIBUTE_DEPTH = 64
 STABLE_FLOAT_DIGITS = 12
@@ -172,11 +174,23 @@ def _nonnegative_int(value: Any, path: str) -> int:
     return value
 
 
-def _enum(value: Any, enum_type: type[Modality] | type[Signal] | type[Outcome], path: str):
+def _enum(value: Any, enum_type: type[_EnumT], path: str) -> _EnumT:
+    """Validate that a value already is a member of ``enum_type``."""
     if not isinstance(value, enum_type):
         choices = ", ".join(member.value for member in enum_type)
         raise ValidationError(f"{path} must be one of: {choices}")
     return value
+
+
+def _enum_from_json(value: Any, enum_type: type[_EnumT], path: str) -> _EnumT:
+    """Resolve a JSON string into a member of ``enum_type``."""
+    choices = ", ".join(member.value for member in enum_type)
+    if not isinstance(value, str):
+        raise ValidationError(f"{path} must be one of: {choices}")
+    try:
+        return enum_type(value)
+    except ValueError as exc:
+        raise ValidationError(f"{path} must be one of: {choices}") from exc
 
 
 def _immutable_text_tuple(value: Any, path: str, *, canonical: bool = True) -> tuple[str, ...]:
@@ -358,16 +372,8 @@ class EvidenceEvent:
         event_id = _required_string(data, "event_id", path)
         claim = _required_string(data, "claim", path)
         source = _required_string(data, "source", path)
-        try:
-            modality = Modality(data.get("modality"))
-        except (TypeError, ValueError) as exc:
-            raise ValidationError(
-                f"{path}.modality must be one of: vision, audio, text, sensor"
-            ) from exc
-        try:
-            signal = Signal(data.get("signal"))
-        except (TypeError, ValueError) as exc:
-            raise ValidationError(f"{path}.signal must be one of: support, contradict") from exc
+        modality = _enum_from_json(data.get("modality"), Modality, f"{path}.modality")
+        signal = _enum_from_json(data.get("signal"), Signal, f"{path}.signal")
         confidence = _number(data.get("confidence"), f"{path}.confidence", 0.0, 1.0)
         observed_at = parse_timestamp(data.get("observed_at"), f"{path}.observed_at")
         ingested_at = parse_timestamp(data.get("ingested_at"), f"{path}.ingested_at")

@@ -94,14 +94,16 @@ def test_event_rejects_unknown_field() -> None:
         EvidenceEvent.from_dict(event_dict(typo=1))
 
 
-def test_event_rejects_invalid_modality() -> None:
+@pytest.mark.parametrize("modality", ["thermal", 7, None])
+def test_event_rejects_invalid_modality(modality: object) -> None:
     with pytest.raises(ValidationError, match="modality"):
-        EvidenceEvent.from_dict(event_dict(modality="thermal"))
+        EvidenceEvent.from_dict(event_dict(modality=modality))
 
 
-def test_event_rejects_invalid_signal() -> None:
+@pytest.mark.parametrize("signal", ["maybe", 7, None])
+def test_event_rejects_invalid_signal(signal: object) -> None:
     with pytest.raises(ValidationError, match="signal"):
-        EvidenceEvent.from_dict(event_dict(signal="maybe"))
+        EvidenceEvent.from_dict(event_dict(signal=signal))
 
 
 def test_policy_rejects_unknown_schema_version() -> None:

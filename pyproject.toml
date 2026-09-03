@@ -28,6 +28,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = [
   "build>=1.2",
+  "mypy>=1.15",
   "pytest>=8.0",
   "pytest-cov>=5.0",
   "ruff>=0.9",
@@ -74,3 +75,8 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
