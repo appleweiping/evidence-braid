@@ -1,6 +1,7 @@
 # Evidence Braid
 
 [![CI](https://github.com/appleweiping/evidence-braid/actions/workflows/ci.yml/badge.svg)](https://github.com/appleweiping/evidence-braid/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/appleweiping/evidence-braid/actions/workflows/codeql.yml/badge.svg)](https://github.com/appleweiping/evidence-braid/actions/workflows/codeql.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776ab)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-0f766e)](LICENSE)
 

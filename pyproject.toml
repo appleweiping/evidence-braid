@@ -27,6 +27,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
+  "bandit>=1.7",
   "build>=1.2",
   "mypy>=1.15",
   "pytest>=8.0",
@@ -80,3 +81,6 @@ quote-style = "double"
 python_version = "3.11"
 strict = true
 files = ["src"]
+
+[tool.bandit]
+targets = ["src"]

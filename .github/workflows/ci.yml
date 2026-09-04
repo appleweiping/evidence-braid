@@ -41,6 +41,7 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: python -m mypy
+      - run: bandit -q -c pyproject.toml -r src
       - run: pytest --cov=evidence_braid --cov-report=term-missing
       - name: Smoke-test fixed-time evaluation
         # `$DECISION_OUTPUT` is bash syntax. Without an explicit shell the Windows
