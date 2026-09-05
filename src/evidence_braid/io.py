@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from math import isfinite
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from .errors import InputFormatError, ValidationError
 from .limits import (
@@ -17,7 +17,9 @@ from .limits import (
     MAX_LINE_BYTES,
     MAX_POLICY_BYTES,
 )
-from .models import EvidenceEvent, Policy
+from .models import Adjudication, EvidenceEvent, Policy
+
+_RecordT = TypeVar("_RecordT")
 
 
 def _reject_constant(value: str) -> None:
@@ -125,17 +127,17 @@ def load_policy(path: str | Path, *, max_bytes: int = DEFAULT_MAX_POLICY_BYTES) 
     return Policy.from_dict(load_json(path, max_bytes=max_bytes))
 
 
-def load_events(
-    path: str | Path,
-    *,
-    max_bytes: int = DEFAULT_MAX_EVENT_FILE_BYTES,
-    max_line_bytes: int = DEFAULT_MAX_LINE_BYTES,
-) -> list[EvidenceEvent]:
-    source = Path(path)
-    maximum = _limit(max_bytes, "max_bytes", MAX_EVENT_FILE_BYTES)
-    line_maximum = _limit(max_line_bytes, "max_line_bytes", MAX_LINE_BYTES)
-    events: list[EvidenceEvent] = []
-    for line_number, line in _iter_json_lines(source, maximum, line_maximum, "event file"):
+def _load_records(
+    source: Path,
+    label: str,
+    field: str,
+    build: Callable[[Any, str], _RecordT],
+    maximum: int,
+    line_maximum: int,
+) -> list[_RecordT]:
+    """Parse one bounded JSONL document into validated records."""
+    records: list[_RecordT] = []
+    for line_number, line in _iter_json_lines(source, maximum, line_maximum, label):
         try:
             raw = _loads(line)
         except (json.JSONDecodeError, RecursionError, ValueError) as exc:
@@ -145,10 +147,43 @@ def load_events(
                 f"invalid JSONL in {source} at line {line_number}, column {column}{detail}"
             ) from exc
         try:
-            events.append(EvidenceEvent.from_dict(raw, f"events[{line_number}]"))
+            records.append(build(raw, f"{field}[{line_number}]"))
         except ValidationError as exc:
             raise ValidationError(f"{source}: {exc}") from exc
-    return events
+    return records
+
+
+def load_events(
+    path: str | Path,
+    *,
+    max_bytes: int = DEFAULT_MAX_EVENT_FILE_BYTES,
+    max_line_bytes: int = DEFAULT_MAX_LINE_BYTES,
+) -> list[EvidenceEvent]:
+    return _load_records(
+        Path(path),
+        "event file",
+        "events",
+        EvidenceEvent.from_dict,
+        _limit(max_bytes, "max_bytes", MAX_EVENT_FILE_BYTES),
+        _limit(max_line_bytes, "max_line_bytes", MAX_LINE_BYTES),
+    )
+
+
+def load_adjudications(
+    path: str | Path,
+    *,
+    max_bytes: int = DEFAULT_MAX_EVENT_FILE_BYTES,
+    max_line_bytes: int = DEFAULT_MAX_LINE_BYTES,
+) -> list[Adjudication]:
+    """Read caller-supplied ground truth from JSONL under the event-file bounds."""
+    return _load_records(
+        Path(path),
+        "adjudication file",
+        "adjudications",
+        Adjudication.from_dict,
+        _limit(max_bytes, "max_bytes", MAX_EVENT_FILE_BYTES),
+        _limit(max_line_bytes, "max_line_bytes", MAX_LINE_BYTES),
+    )
 
 
 def canonical_json(value: Any, *, pretty: bool = True) -> str:

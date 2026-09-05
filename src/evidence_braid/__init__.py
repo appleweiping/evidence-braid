@@ -4,11 +4,12 @@ from .baselines import BaselineDecision, majority_vote, reliability_weighted_vot
 from .engine import ClaimDecision, EvaluationResult, evaluate
 from .errors import EvidenceBraidError, InputFormatError, ValidationError
 from .metrics import classification_metrics
-from .models import EvidenceEvent, Modality, Outcome, Policy, Signal
+from .models import Adjudication, EvidenceEvent, Modality, Outcome, Policy, Signal, Verdict
 from .replay import replay
 from .report import render_html, render_svg
 
 __all__ = [
+    "Adjudication",
     "BaselineDecision",
     "ClaimDecision",
     "EvaluationResult",
@@ -20,6 +21,7 @@ __all__ = [
     "Policy",
     "Signal",
     "ValidationError",
+    "Verdict",
     "classification_metrics",
     "evaluate",
     "majority_vote",

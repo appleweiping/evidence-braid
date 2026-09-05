@@ -33,8 +33,19 @@ class WeightedEvent:
             )
 
 
-def weight_event(event: EvidenceEvent, policy: Policy, as_of: datetime) -> WeightedEvent:
-    """Apply source reliability and exponential half-life decay."""
+def weight_event(
+    event: EvidenceEvent,
+    policy: Policy,
+    as_of: datetime,
+    *,
+    reliability: float | None = None,
+) -> WeightedEvent:
+    """Apply source reliability and exponential half-life decay.
+
+    ``reliability`` overrides the policy's declared value for this source. The
+    engine passes one only when an opt-in reliability update applies, so the
+    function stays a pure function of its arguments either way.
+    """
     age_seconds = (as_of - event.observed_at).total_seconds()
     if age_seconds < -policy.decay.max_future_skew_seconds:
         raise ValidationError(
@@ -43,6 +54,6 @@ def weight_event(event: EvidenceEvent, policy: Policy, as_of: datetime) -> Weigh
     age_seconds = max(age_seconds, 0.0)
     half_life = policy.decay.half_life_for(event.modality)
     decay_factor = 2.0 ** (-age_seconds / half_life)
-    reliability = policy.reliability_for(event.source)
-    effective = event.confidence * reliability * decay_factor
-    return WeightedEvent(event, age_seconds, reliability, decay_factor, effective)
+    applied = policy.reliability_for(event.source) if reliability is None else reliability
+    effective = event.confidence * applied * decay_factor
+    return WeightedEvent(event, age_seconds, applied, decay_factor, effective)

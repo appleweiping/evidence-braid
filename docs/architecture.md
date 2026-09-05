@@ -6,6 +6,8 @@ presentation so each layer can be reviewed and tested independently.
 ```text
 policy JSON ──> strict models ────────────────┐
                                               │
+adjudications -> strict truth --> known-at-T -┤   (optional, caller-supplied)
+                                              │
 events JSONL -> strict events -> known-at-T -> weighting -> correlation collapse
                                                             │
                                                             v
@@ -48,6 +50,25 @@ types are accepted for attributes.
 Converts one event into a `WeightedEvent`. It contains no aggregation or policy
 outcome logic. Given an event, policy, and time, it is a pure function.
 
+### `reliability.py`
+
+Holds the opt-in source-reliability update rule and the stream-wide validation
+of the adjudications that drive it. Given a policy and a set of caller-supplied
+judgements it is a pure function: no clock, no randomness, and no iteration over
+an unordered collection reaches an output.
+
+Reliability moves only from `Adjudication` records. Nothing in this package can
+tell whether a source was right, and the module does not invent a stand-in for
+that fact. An adjudication must name a source the policy declares, must not
+repeat an `event_id`, must not contradict the source of an event that is in the
+stream, and must not predate that event's ingestion. Failures are reported over
+sorted identities, so even an error message does not depend on input order.
+
+`adjust_reliabilities` returns one record per adjudicated source, in source
+order, carrying both the unbounded closed-form value and the bounded value the
+engine actually applies. A source without adjudications produces no record and
+keeps its declared reliability.
+
 ### `grouping.py`
 
 Partitions weighted events by correlation identity and signal, then selects a
@@ -68,12 +89,26 @@ and after stabilization.
 Rejecting unknown claims is intentional. Silently skipping them could make a
 missing policy rule look like absence of evidence.
 
+Reliability updates are resolved once per evaluation, before any event is
+weighted, and emitted as `ReliabilityUpdateTrace` records beside the decisions.
+The record cross-checks itself: its counts must match its event IDs, an ID
+cannot be both correct and incorrect, and its reported change must equal the
+applied weight minus the declared one. A trace that could disagree with the
+weight the engine used would be worse than no trace. The result payload omits
+the whole section for a policy that does not configure updating, so such a
+policy keeps the exact digest it had before the feature existed.
+
 ### `replay.py`
 
 Builds deterministic historical snapshots at distinct ingestion times. It does
 not simulate a clock or pass future events into earlier evaluations. Every
 snapshot contains only its ingestion prefix, so extending a valid stream cannot
 alter an earlier digest. The same engine validates and evaluates each prefix.
+
+Ground truth arrives on its own clock, so an adjudication time is a snapshot
+boundary exactly as an ingestion time is, and a snapshot sees only the
+adjudications knowable at it. A stream with no adjudications produces the
+boundaries replay always produced.
 
 ### `io.py`, `limits.py`, and `cli.py`
 
@@ -93,7 +128,9 @@ bound for one untrusted feed; a value outside `1..ceiling` is a
 property of the build rather than of an argument list. Line lengths are
 measured on encoded bytes before decoding, and `bytes.splitlines` recognizes
 exactly the newline forms Python's text mode normalizes, so a reported line
-number matches the one an operator sees in an editor.
+number matches the one an operator sees in an editor. `load_adjudications`
+reads caller-supplied ground truth from JSONL through the same bounded reader
+and under the same event-file and event-line limits.
 
 ### `report.py`
 
@@ -116,6 +153,11 @@ of truth.
 11. Public model instances cannot retain caller-owned mutable collections.
 12. Every accepted attribute can be serialized by the strict JSON adapter.
 13. Input beyond a configured size bound is refused, never truncated.
+14. A source reliability changes only from caller-supplied adjudications that
+    are knowable at the evaluated instant, and only under a policy that asked
+    for updating.
+15. Every reliability change is recorded with the adjudications that caused it
+    and the arithmetic that produced it.
 
 ## Scoring rationale
 
@@ -134,6 +176,38 @@ are calibrated probabilities.
 The score and independence gates are deliberately separate. A strong single
 source may cross a numerical threshold while failing quorum or diversity. The
 trace distinguishes these cases.
+
+## Reliability updating rationale
+
+A declared reliability that can never move makes the concept decorative: a
+source observed to be wrong repeatedly keeps its stated weight forever. The
+opposite failure is worse, though — a weight that drifts under an opaque
+estimator is a decision input nobody can review.
+
+The rule is therefore a closed form over counts:
+
+```text
+posterior = (prior_weight × declared + correct) / (prior_weight + observations)
+applied   = declared + min(max(posterior − declared, −max_adjustment), max_adjustment)
+```
+
+which is the declared value and the observed correct rate averaged with weights
+`prior_weight` and `observations`. Three consequences are what make it
+shippable here. A reviewer can recompute any published weight on a calculator
+from numbers the audit trail already contains. Only counts enter, so nothing
+depends on arrival order, storage order, or iteration order, and a snapshot
+stays a pure function of its prefix. And `posterior` cannot leave `[0, 1]`,
+because `correct <= observations` and `declared <= 1`, while `applied` always
+lies between `declared` and `posterior`.
+
+Estimators with better statistical properties exist. They were rejected because
+none of them can be checked by hand from the machine output, which is the
+property this project actually needs. The rule is an accounting convention a
+policy adopts, not an estimate of a true reliability, and the documentation
+does not claim otherwise.
+
+The baselines in `baselines.py` deliberately keep using declared reliabilities,
+so an ablation against them still isolates one mechanism at a time.
 
 ## Deterministic digest
 
@@ -167,6 +241,13 @@ lying, replaying a new ID, or selecting a misleading correlation group. A
 production boundary should authenticate sources, enforce monotonic or
 idempotent ingestion, store original bytes, and record policy approval
 separately.
+
+Adjudications are a second trusted input and deserve the same treatment. The
+engine checks that a judgement is internally consistent with the stream; it
+cannot tell a careful adjudication from a careless or hostile one, and whoever
+can write the ground-truth feed can move a source's weight within
+`max_adjustment`. Authenticate that feed, and record who adjudicated what,
+outside this library.
 
 The adapters cap their own reads, which bounds the memory one load can consume
 and makes an oversized document a refusal instead of a silent truncation. That

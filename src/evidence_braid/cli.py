@@ -10,7 +10,7 @@ from pathlib import Path
 from . import __version__
 from .engine import evaluate
 from .errors import EvidenceBraidError, InputFormatError
-from .io import canonical_json, load_events, load_policy, write_text
+from .io import canonical_json, load_adjudications, load_events, load_policy, write_text
 from .models import parse_timestamp
 from .replay import replay
 from .report import render_html, render_svg
@@ -33,12 +33,18 @@ def _parser() -> argparse.ArgumentParser:
     )
     evaluate_parser.add_argument("--html", help="optional standalone HTML report destination")
     evaluate_parser.add_argument("--svg", help="optional SVG summary destination")
+    evaluate_parser.add_argument(
+        "--adjudications", type=Path, help="optional adjudicated-outcome JSONL file"
+    )
 
     replay_parser = subparsers.add_parser("replay", help="evaluate after each ingestion timestamp")
     replay_parser.add_argument("policy", type=Path, help="policy JSON file")
     replay_parser.add_argument("events", type=Path, help="evidence JSONL file")
     replay_parser.add_argument(
         "--output", default="-", help="result JSONL destination, or - for stdout"
+    )
+    replay_parser.add_argument(
+        "--adjudications", type=Path, help="optional adjudicated-outcome JSONL file"
     )
     return parser
 
@@ -76,16 +82,17 @@ def run(argv: Sequence[str] | None = None) -> int:
     try:
         policy = load_policy(args.policy)
         events = load_events(args.events)
+        adjudications = load_adjudications(args.adjudications) if args.adjudications else []
         if args.command == "evaluate":
             as_of = parse_timestamp(args.as_of, "--as-of")
-            result = evaluate(policy, events, as_of)
+            result = evaluate(policy, events, as_of, adjudications=adjudications)
             _emit(args.output, canonical_json(result.to_dict()))
             if args.html:
                 write_text(args.html, render_html(result))
             if args.svg:
                 write_text(args.svg, render_svg(result))
         else:
-            results = replay(policy, events)
+            results = replay(policy, events, adjudications=adjudications)
             content = "".join(
                 canonical_json(result.to_dict(), pretty=False) + "\n" for result in results
             )

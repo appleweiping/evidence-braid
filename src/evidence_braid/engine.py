@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from math import prod
@@ -15,14 +15,15 @@ from .decay import WeightedEvent, weight_event
 from .errors import ValidationError
 from .grouping import CorrelationSelection, collapse_correlated
 from .models import (
+    Adjudication,
     ClaimRule,
     EvidenceEvent,
     Modality,
     Outcome,
     Policy,
     Signal,
+    _canonical_text_tuple,
     _enum,
-    _immutable_text_tuple,
     _nonnegative_int,
     _number,
     _stable_float,
@@ -30,6 +31,7 @@ from .models import (
     format_timestamp,
     normalize_datetime,
 )
+from .reliability import ReliabilityAdjustment, adjust_reliabilities, validate_adjudication_set
 
 _ModelT = TypeVar("_ModelT")
 
@@ -48,13 +50,6 @@ def _model_tuple(value: Any, model_type: type[_ModelT], path: str) -> tuple[_Mod
         if not isinstance(item, model_type):
             raise ValidationError(f"{path}[{index}] must be a {model_type.__name__} instance")
     return result
-
-
-def _canonical_text_tuple(value: Any, path: str) -> tuple[str, ...]:
-    items = _immutable_text_tuple(value, path)
-    if len(set(items)) != len(items):
-        raise ValidationError(f"{path} must not contain duplicates")
-    return tuple(sorted(items))
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,6 +246,101 @@ class CorrelationTrace:
 
 
 @dataclass(frozen=True, slots=True)
+class ReliabilityUpdateTrace:
+    """Deeply immutable record of one source-reliability change.
+
+    It names every adjudication that moved the weight and every number the
+    documented closed form consumed, so an operator can recompute the applied
+    reliability by hand instead of trusting that it moved for a good reason.
+    """
+
+    source: str
+    declared_reliability: float
+    posterior_reliability: float
+    applied_reliability: float
+    adjustment: float
+    correct_count: int
+    incorrect_count: int
+    correct_event_ids: tuple[str, ...]
+    incorrect_event_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "source", _text(self.source, "reliability_update.source"))
+        for field_name in (
+            "declared_reliability",
+            "posterior_reliability",
+            "applied_reliability",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _number(getattr(self, field_name), f"reliability_update.{field_name}", 0.0, 1.0),
+            )
+        object.__setattr__(
+            self,
+            "adjustment",
+            _number(self.adjustment, "reliability_update.adjustment", -1.0, 1.0),
+        )
+        correct = _canonical_text_tuple(
+            self.correct_event_ids, "reliability_update.correct_event_ids"
+        )
+        incorrect = _canonical_text_tuple(
+            self.incorrect_event_ids, "reliability_update.incorrect_event_ids"
+        )
+        if set(correct) & set(incorrect):
+            raise ValidationError(
+                "reliability_update event IDs must not be both correct and incorrect"
+            )
+        correct_count = _nonnegative_int(self.correct_count, "reliability_update.correct_count")
+        incorrect_count = _nonnegative_int(
+            self.incorrect_count, "reliability_update.incorrect_count"
+        )
+        if correct_count != len(correct) or incorrect_count != len(incorrect):
+            raise ValidationError("reliability_update counts do not match their event IDs")
+        if not correct_count and not incorrect_count:
+            raise ValidationError("reliability_update must record at least one adjudication")
+        # A recorded change that does not equal applied minus declared would
+        # make the audit trail describe a weight the engine did not use.
+        if _stable_float(self.applied_reliability - self.declared_reliability) != _stable_float(
+            self.adjustment
+        ):
+            raise ValidationError(
+                "reliability_update.adjustment must equal applied minus declared reliability"
+            )
+        object.__setattr__(self, "correct_event_ids", correct)
+        object.__setattr__(self, "incorrect_event_ids", incorrect)
+
+    @classmethod
+    def from_adjustment(cls, adjustment: ReliabilityAdjustment) -> ReliabilityUpdateTrace:
+        return cls(
+            source=adjustment.source,
+            declared_reliability=adjustment.declared_reliability,
+            posterior_reliability=adjustment.posterior_reliability,
+            applied_reliability=adjustment.applied_reliability,
+            adjustment=_stable_float(
+                adjustment.applied_reliability - adjustment.declared_reliability
+            ),
+            correct_count=len(adjustment.correct_event_ids),
+            incorrect_count=len(adjustment.incorrect_event_ids),
+            correct_event_ids=adjustment.correct_event_ids,
+            incorrect_event_ids=adjustment.incorrect_event_ids,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "source": self.source,
+            "declared_reliability": self.declared_reliability,
+            "posterior_reliability": self.posterior_reliability,
+            "applied_reliability": self.applied_reliability,
+            "adjustment": self.adjustment,
+            "correct_count": self.correct_count,
+            "incorrect_count": self.incorrect_count,
+            "correct_event_ids": list(self.correct_event_ids),
+            "incorrect_event_ids": list(self.incorrect_event_ids),
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class ClaimDecision:
     claim: str
     outcome: Outcome
@@ -313,6 +403,7 @@ class EvaluationResult:
     considered_event_count: int
     pending_event_ids: tuple[str, ...]
     decisions: tuple[ClaimDecision, ...]
+    reliability_updates: tuple[ReliabilityUpdateTrace, ...] | None = None
 
     def __post_init__(self) -> None:
         if type(self.schema_version) is not int or self.schema_version != 1:
@@ -339,13 +430,24 @@ class EvaluationResult:
             raise ValidationError("result.decisions contains duplicate claims")
         if sum(len(decision.trace) for decision in decisions) != considered_count:
             raise ValidationError("result considered count does not match decision traces")
+        updates = self.reliability_updates
+        if updates is not None:
+            updates = _model_tuple(
+                updates,
+                ReliabilityUpdateTrace,
+                "result.reliability_updates",
+            )
+            updates = tuple(sorted(updates, key=lambda item: item.source))
+            if len({item.source for item in updates}) != len(updates):
+                raise ValidationError("result.reliability_updates contains duplicate sources")
         object.__setattr__(self, "input_event_count", input_count)
         object.__setattr__(self, "considered_event_count", considered_count)
         object.__setattr__(self, "pending_event_ids", pending)
         object.__setattr__(self, "decisions", decisions)
+        object.__setattr__(self, "reliability_updates", updates)
 
     def _payload(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "schema_version": self.schema_version,
             "policy_id": self.policy_id,
             "evaluated_at": format_timestamp(self.evaluated_at),
@@ -354,6 +456,12 @@ class EvaluationResult:
             "pending_event_ids": list(self.pending_event_ids),
             "decisions": [decision.to_dict() for decision in self.decisions],
         }
+        # A policy that never asked for reliability updating produces exactly
+        # the payload, and therefore exactly the digest, that it produced
+        # before the feature existed.
+        if self.reliability_updates is not None:
+            payload["reliability_updates"] = [item.to_dict() for item in self.reliability_updates]
+        return payload
 
     @property
     def digest(self) -> str:
@@ -445,8 +553,12 @@ def _evaluate_claim(
     events: list[EvidenceEvent],
     policy: Policy,
     as_of: datetime,
+    reliabilities: Mapping[str, float],
 ) -> ClaimDecision:
-    weighted: list[WeightedEvent] = [weight_event(event, policy, as_of) for event in events]
+    weighted: list[WeightedEvent] = [
+        weight_event(event, policy, as_of, reliability=reliabilities.get(event.source))
+        for event in events
+    ]
     weighted.sort(key=lambda item: item.event.event_id)
     selections = collapse_correlated(weighted)
     support = _summarize_signal(Signal.SUPPORT, selections, rule)
@@ -491,14 +603,31 @@ def validate_event_set(policy: Policy, events: Iterable[EvidenceEvent]) -> list[
     return event_list
 
 
-def evaluate(policy: Policy, events: Iterable[EvidenceEvent], as_of: datetime) -> EvaluationResult:
+def evaluate(
+    policy: Policy,
+    events: Iterable[EvidenceEvent],
+    as_of: datetime,
+    *,
+    adjudications: Iterable[Adjudication] = (),
+) -> EvaluationResult:
     """Evaluate every configured claim using evidence known at ``as_of``.
 
     Duplicate IDs are rejected even if one copy is not yet ingested. Unknown
     claims are rejected so policy drift cannot silently discard observations.
+
+    ``adjudications`` carries ground truth the caller obtained elsewhere. Only
+    the ones adjudicated at or before ``as_of`` move a source reliability, and
+    only when the policy configures ``reliability_updates``; supplying them
+    against a policy that does not is an error rather than a silent no-op.
     """
     normalized_as_of = normalize_datetime(as_of, "as_of")
     event_list = validate_event_set(policy, events)
+    adjudication_list = validate_adjudication_set(policy, event_list, adjudications)
+    adjustments = adjust_reliabilities(
+        policy,
+        [item for item in adjudication_list if item.adjudicated_at <= normalized_as_of],
+    )
+    reliabilities = {item.source: item.applied_reliability for item in adjustments}
     considered = [event for event in event_list if event.ingested_at <= normalized_as_of]
     pending = tuple(
         sorted(event.event_id for event in event_list if event.ingested_at > normalized_as_of)
@@ -507,7 +636,14 @@ def evaluate(policy: Policy, events: Iterable[EvidenceEvent], as_of: datetime) -
     for event in considered:
         by_claim[event.claim].append(event)
     decisions = tuple(
-        _evaluate_claim(claim, policy.claims[claim], by_claim[claim], policy, normalized_as_of)
+        _evaluate_claim(
+            claim,
+            policy.claims[claim],
+            by_claim[claim],
+            policy,
+            normalized_as_of,
+            reliabilities,
+        )
         for claim in sorted(policy.claims)
     )
     return EvaluationResult(
@@ -518,4 +654,9 @@ def evaluate(policy: Policy, events: Iterable[EvidenceEvent], as_of: datetime) -
         considered_event_count=len(considered),
         pending_event_ids=pending,
         decisions=decisions,
+        reliability_updates=(
+            None
+            if policy.reliability_updates is None
+            else tuple(ReliabilityUpdateTrace.from_adjustment(item) for item in adjustments)
+        ),
     )

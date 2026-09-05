@@ -63,9 +63,37 @@ def _decision_section(decision: ClaimDecision) -> str:
     </section>"""
 
 
+def _reliability_section(result: EvaluationResult) -> str:
+    """Show any reliability the caller's ground truth moved, or nothing at all."""
+    updates = result.reliability_updates
+    if not updates:
+        return ""
+    rows = "".join(
+        "<tr>"
+        f"<td><code>{escape(item.source)}</code></td>"
+        f"<td>{item.declared_reliability:.3f}</td>"
+        f"<td>{item.correct_count}</td>"
+        f"<td>{item.incorrect_count}</td>"
+        f"<td>{item.applied_reliability:.3f}</td>"
+        f"<td>{item.adjustment:+.3f}</td>"
+        "</tr>"
+        for item in updates
+    )
+    return f"""
+    <section class="decision">
+      <div class="decision-head"><div><p class="eyebrow">Sources</p>
+        <h2>Reliability updates</h2></div></div>
+      <p class="reason">Applied from caller-supplied adjudications. Machine JSON lists the adjudicated event IDs.</p>
+      <div class="table-wrap"><table><thead><tr><th>Source</th><th>Declared</th><th>Correct</th>
+      <th>Incorrect</th><th>Applied</th><th>Change</th></tr></thead>
+      <tbody>{rows}</tbody></table></div>
+    </section>"""
+
+
 def render_html(result: EvaluationResult) -> str:
     """Render a standalone HTML file without network assets or scripts."""
     sections = "".join(_decision_section(decision) for decision in result.decisions)
+    sections += _reliability_section(result)
     document = f"""<!doctype html>
 <html lang="en">
 <head>

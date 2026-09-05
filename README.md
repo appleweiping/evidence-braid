@@ -68,7 +68,9 @@ evidence-braid replay examples/policy.json examples/events.jsonl \
 ```
 
 Use `-` as the output path to write machine output to standard output. Errors
-are written to standard error and return exit code `2`.
+are written to standard error and return exit code `2`. Both commands accept
+`--adjudications` when a policy opts into
+[reliability updating](#reliability-updating-optional).
 
 ## A complete event
 
@@ -200,6 +202,68 @@ contradiction. Every ambiguous, under-threshold, insufficiently independent, or
 balanced result becomes `review`. The engine never silently turns uncertainty
 into a confident decision.
 
+### Reliability updating (optional)
+
+By default a source keeps the reliability the policy declares. A policy may
+instead opt into maintaining it:
+
+```json
+"reliability_updates": {
+  "prior_weight": 4,
+  "max_adjustment": 0.2
+}
+```
+
+Nothing moves on its own. Evidence fusion cannot observe whether a source was
+right, so the caller supplies ground truth: adjudications, one per judged
+observation, produced by whatever process decides correctness in the deploying
+organization. There is no proxy for correctness anywhere in the engine.
+
+```json
+{
+  "event_id": "camera-north-0042",
+  "source": "camera-north",
+  "verdict": "incorrect",
+  "adjudicated_at": "2026-08-31T12:04:00Z"
+}
+```
+
+`adjudicated_at` is the ingestion analogue for ground truth: it controls when a
+judgement becomes knowable, so a snapshot stays a pure function of its own
+prefix. An adjudication may only name a source the policy declares, may not
+repeat an `event_id`, may not disagree with the source of an event in the
+stream, and may not predate that event's ingestion. Supplying adjudications to
+a policy that does not configure `reliability_updates` is an error rather than
+a silent no-op.
+
+For one source with `correct` and `incorrect` adjudications knowable at `T`,
+and the reliability `declared` by the policy:
+
+```text
+observations = correct + incorrect
+posterior    = (prior_weight × declared + correct) / (prior_weight + observations)
+delta        = min(max(posterior − declared, −max_adjustment), max_adjustment)
+applied      = declared + delta
+```
+
+`posterior` is `declared` and the observed rate `correct / observations`
+averaged with weights `prior_weight` and `observations`, so `prior_weight` is
+denominated in adjudications: after exactly that many, a weight has moved
+halfway from its declared value to the observed rate. With `prior_weight` 4, a
+declared 0.9, and one correct of four judgements, `posterior` is
+`(4 × 0.9 + 1) / 8 = 0.575`, and a `max_adjustment` of 0.2 applies 0.7 instead.
+A source with no adjudications keeps its declared reliability exactly and
+produces no record.
+
+Only counts enter, so the order judgements arrive in cannot change a weight.
+The rule is an accounting rule the policy agreed to, not a calibration method:
+it says how a stated reliability reacts to counted mistakes, and its output is
+not an estimate of how reliable a source truly is. The comparison baselines
+deliberately keep using declared reliabilities.
+
+Supply the file with `--adjudications` on either command, or pass
+`adjudications=` to `evaluate` or `replay` from Python.
+
 ## Machine output
 
 The result contains:
@@ -211,7 +275,16 @@ The result contains:
 - quorum/source/modality gate details;
 - each event's raw confidence, reliability, age, decay, and effective value;
 - representatives and suppressed members of each correlation group;
+- one record per adjudicated source when the policy configures reliability
+  updating: the declared weight, the unbounded `posterior`, the `applied`
+  weight, the signed change, and the adjudicated event IDs on each side;
 - a SHA-256 digest over the canonical result payload.
+
+The `reliability_updates` key is absent entirely for a policy that does not
+configure updating, so an unchanged policy produces the payload, and therefore
+the digest, it produced before the feature existed. An enabled policy with
+nothing yet adjudicated reports an empty list, which is how an operator tells
+"updating is on and no weight moved" from "updating is off".
 
 Computed floats are stabilized to 12 decimal places for both policy comparisons
 and public output. Correlation ranking and score aggregation use that same
@@ -229,9 +302,14 @@ Appending a valid later event does not change an earlier snapshot, its input
 count, or its digest. Observed time controls decay; ingestion time controls when
 an event becomes knowable.
 
+Ground truth is knowable on its own clock, so an adjudication time is a
+snapshot boundary exactly as an ingestion time is. Without adjudications the
+boundaries are unchanged. Appending a later adjudication cannot alter an
+earlier snapshot or its digest.
+
 Replay output is JSONL: one compact result per snapshot. The same strict event,
-claim, duplicate-ID, future-skew, and policy validation applies as in a
-fixed-time evaluation.
+claim, duplicate-ID, future-skew, adjudication, and policy validation applies as
+in a fixed-time evaluation.
 
 ## Python API
 
@@ -245,6 +323,19 @@ result = evaluate(policy, events, parse_timestamp("2026-08-31T12:00:00Z", "as_of
 
 print(result.decisions[0].outcome.value)
 print(result.digest)
+```
+
+A policy that opts into reliability updating takes the caller's ground truth
+through the same call:
+
+```python
+from evidence_braid import Adjudication
+
+judgements = [Adjudication.from_dict(item) for item in adjudication_documents]
+result = evaluate(policy, events, as_of, adjudications=judgements)
+
+for update in result.reliability_updates or ():
+    print(update.source, update.declared_reliability, update.applied_reliability)
 ```
 
 Public model constructors validate their typed fields, defensively snapshot
@@ -286,6 +377,8 @@ For the same validated policy, event set, and `as_of` instant:
 - input order does not affect a decision or digest;
 - adding later replay input does not change any earlier valid snapshot;
 - values tied at the public 12-decimal precision use lexical event IDs;
+- a source reliability depends only on how many adjudications are knowable at
+  the instant, never on the order they arrived or were stored in;
 - claim output order is lexical;
 - timestamps are normalized to UTC;
 - serialization uses sorted keys and fixed separators for the digest;
@@ -310,7 +403,12 @@ monitoring, incident response, and an operator override outside this library.
 Known scope boundaries:
 
 - confidence calibration is supplied by the caller;
-- source reliabilities are static within one policy;
+- source reliabilities are static within one policy unless it opts into
+  `reliability_updates`, and even then they move only from adjudications the
+  caller supplies, by a fixed rule that makes no claim to be calibrated;
+- adjudication quality, coverage, and selection are the caller's problem: a
+  weight computed from a biased or sparse sample of judgements is reproducible,
+  auditable, and still wrong;
 - correlation groups are declared, not inferred;
 - one event addresses one claim and one signal;
 - policy migration beyond schema version 1 is not yet implemented;
@@ -359,9 +457,9 @@ python experiments/synthetic_baselines.py --samples 12 --repeats 3 --replay-even
 
 The test suite covers decay, source reliability, correlation collapse,
 conflicts, stable threshold boundaries, diversity gates, duplicate and
-malformed input, input size bounds, Unicode/report safety, ingestion semantics,
-prefix-stable replay, immutable traces, reports, CLI behavior, and order
-determinism.
+malformed input, input size bounds, opt-in reliability updating and its audit
+trail, Unicode/report safety, ingestion semantics, prefix-stable replay,
+immutable traces, reports, CLI behavior, and order determinism.
 
 See [`docs/architecture.md`](docs/architecture.md) for design boundaries,
 [`docs/compatibility.md`](docs/compatibility.md) for the versioning contract,

@@ -16,7 +16,10 @@ Compatibility surfaces include:
 Changing a decision comparison, stabilized precision, correlation selection, replay boundary, or
 digest input is behaviorally significant even when Python signatures do not change. Such changes
 require tests, an explicit changelog entry, and regenerated example artifacts. Incompatible machine
-output requires a new schema version; consumers should ignore unknown additive fields.
+output requires a new schema version; consumers should ignore unknown additive fields. The
+`reliability_updates` result section and the adjudication-time replay boundary are additive in
+exactly that sense: both appear only for a policy that configures `reliability_updates`, and a
+policy that does not keeps its previous output, boundaries, and digest.
 
 Supported Python versions are listed in `pyproject.toml` and exercised in CI. Removal is documented
 in a minor release and normally follows the version's upstream security end-of-life. Benchmark

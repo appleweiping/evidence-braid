@@ -48,6 +48,13 @@ class Outcome(StrEnum):
     REVIEW = "review"
 
 
+class Verdict(StrEnum):
+    """Ground truth about one observation, decided outside this library."""
+
+    CORRECT = "correct"
+    INCORRECT = "incorrect"
+
+
 def _is_xml_character(value: str) -> bool:
     """Return whether every code point is permitted by XML 1.0."""
     return all(
@@ -204,6 +211,14 @@ def _immutable_text_tuple(value: Any, path: str, *, canonical: bool = True) -> t
             raise ValidationError(f"{path}[{index}] must not have surrounding whitespace")
         result.append(text)
     return tuple(result)
+
+
+def _canonical_text_tuple(value: Any, path: str) -> tuple[str, ...]:
+    """Validate a set-like sequence of identifiers into sorted, unique order."""
+    items = _immutable_text_tuple(value, path)
+    if len(set(items)) != len(items):
+        raise ValidationError(f"{path} must not contain duplicates")
+    return tuple(sorted(items))
 
 
 def _freeze_json(
@@ -419,6 +434,51 @@ class EvidenceEvent:
 
 
 @dataclass(frozen=True, slots=True)
+class Adjudication:
+    """One caller-supplied judgement about whether an observation was right.
+
+    Evidence fusion cannot discover whether a source was correct; something
+    outside this library must decide and say so. ``adjudicated_at`` is the
+    ingestion analogue for ground truth: it controls when a judgement becomes
+    knowable, so a replay snapshot stays a function of its own prefix.
+    """
+
+    event_id: str
+    source: str
+    verdict: Verdict
+    adjudicated_at: datetime
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "event_id", _text(self.event_id, "adjudication.event_id"))
+        object.__setattr__(self, "source", _text(self.source, "adjudication.source"))
+        object.__setattr__(self, "verdict", _enum(self.verdict, Verdict, "adjudication.verdict"))
+        object.__setattr__(
+            self,
+            "adjudicated_at",
+            normalize_datetime(self.adjudicated_at, "adjudication.adjudicated_at"),
+        )
+
+    @classmethod
+    def from_dict(cls, raw: Any, path: str = "adjudication") -> Adjudication:
+        data = _mapping(raw, path)
+        _only(data, {"event_id", "source", "verdict", "adjudicated_at"}, path)
+        return cls(
+            event_id=_required_string(data, "event_id", path),
+            source=_required_string(data, "source", path),
+            verdict=_enum_from_json(data.get("verdict"), Verdict, f"{path}.verdict"),
+            adjudicated_at=parse_timestamp(data.get("adjudicated_at"), f"{path}.adjudicated_at"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "event_id": self.event_id,
+            "source": self.source,
+            "verdict": self.verdict.value,
+            "adjudicated_at": format_timestamp(self.adjudicated_at),
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class SourcePolicy:
     reliability: float
 
@@ -506,6 +566,47 @@ class DecayPolicy:
 
     def half_life_for(self, modality: Modality) -> float:
         return self.modality_half_life_seconds.get(modality, self.default_half_life_seconds)
+
+
+@dataclass(frozen=True, slots=True)
+class ReliabilityUpdatePolicy:
+    """Opt-in closed form for moving a declared source reliability.
+
+    ``prior_weight`` is denominated in adjudications: it is how many
+    adjudications are needed to move a weight halfway from its declared value
+    to the observed correct rate. ``max_adjustment`` bounds how far the applied
+    weight may sit from the declared one, so a policy can keep updating from
+    ever fully overriding an operator's stated number. The default of ``1.0``
+    imposes no bound beyond the ``[0, 1]`` range reliabilities already have.
+    """
+
+    prior_weight: float
+    max_adjustment: float = 1.0
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "prior_weight",
+            _number(self.prior_weight, "reliability_updates.prior_weight", 0.000001),
+        )
+        object.__setattr__(
+            self,
+            "max_adjustment",
+            _number(self.max_adjustment, "reliability_updates.max_adjustment", 0.0, 1.0),
+        )
+
+    @classmethod
+    def from_dict(
+        cls, raw: Any, path: str = "policy.reliability_updates"
+    ) -> ReliabilityUpdatePolicy:
+        data = _mapping(raw, path)
+        _only(data, {"prior_weight", "max_adjustment"}, path)
+        return cls(
+            prior_weight=_number(data.get("prior_weight"), f"{path}.prior_weight", 0.000001),
+            max_adjustment=_number(
+                data.get("max_adjustment", 1.0), f"{path}.max_adjustment", 0.0, 1.0
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -605,6 +706,7 @@ class Policy:
     sources: Mapping[str, SourcePolicy]
     decay: DecayPolicy
     claims: Mapping[str, ClaimRule]
+    reliability_updates: ReliabilityUpdatePolicy | None = None
 
     def __post_init__(self) -> None:
         if type(self.schema_version) is not int or self.schema_version != 1:
@@ -629,6 +731,12 @@ class Policy:
         object.__setattr__(self, "sources", MappingProxyType(sources))
         if not isinstance(self.decay, DecayPolicy):
             raise ValidationError("policy.decay must be a DecayPolicy instance")
+        if self.reliability_updates is not None and not isinstance(
+            self.reliability_updates, ReliabilityUpdatePolicy
+        ):
+            raise ValidationError(
+                "policy.reliability_updates must be a ReliabilityUpdatePolicy instance or null"
+            )
         claims_raw = _named_mapping(self.claims, "policy.claims")
         if not claims_raw:
             raise ValidationError("policy.claims must contain at least one claim")
@@ -651,6 +759,7 @@ class Policy:
                 "sources",
                 "decay",
                 "claims",
+                "reliability_updates",
             },
             "policy",
         )
@@ -676,6 +785,9 @@ class Policy:
             name: ClaimRule.from_dict(value, f"policy.claims.{name}")
             for name, value in claims_raw.items()
         }
+        # A policy that says nothing about reliability updating gets none: the
+        # feature has to be asked for by name before any weight can move.
+        updates_raw = data.get("reliability_updates")
         return cls(
             schema_version=version,
             policy_id=policy_id,
@@ -683,6 +795,9 @@ class Policy:
             sources=MappingProxyType(sources),
             decay=DecayPolicy.from_dict(data.get("decay")),
             claims=MappingProxyType(claims),
+            reliability_updates=(
+                None if updates_raw is None else ReliabilityUpdatePolicy.from_dict(updates_raw)
+            ),
         )
 
     def reliability_for(self, source: str) -> float:
