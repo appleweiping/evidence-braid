@@ -314,8 +314,18 @@ Known scope boundaries:
 - correlation groups are declared, not inferred;
 - one event addresses one claim and one signal;
 - policy migration beyond schema version 1 is not yet implemented;
-- file and line sizes are not capped by the dependency-free adapters;
 - the HTML report is a portable snapshot, not a dashboard or evidence store.
+
+The dependency-free adapters do cap what one read consumes. `load_json` and
+`load_policy` accept at most 4 MiB of policy JSON; `load_events` accepts at most
+64 MiB of event JSONL with a 1 MiB ceiling on any single line. Input past a limit
+is refused with a domain error naming the path and the limit, plus the line number
+when one line is at fault, never truncated to a prefix that would still parse. A caller may tighten
+any of these with `max_bytes` or `max_line_bytes`; a value above the compiled
+ceiling is rejected before the file is opened, so a limit can be narrowed but not
+widened. This is a resource bound on a single read, not a security guarantee: it
+does not authenticate a file, detect one that changes between reads, or constrain
+input that reaches the engine by another route.
 
 The repository's checked-in experiment uses generated synthetic labels and cannot establish
 real-world accuracy, fairness, safety, or calibration. Read the
@@ -349,8 +359,9 @@ python experiments/synthetic_baselines.py --samples 12 --repeats 3 --replay-even
 
 The test suite covers decay, source reliability, correlation collapse,
 conflicts, stable threshold boundaries, diversity gates, duplicate and
-malformed input, Unicode/report safety, ingestion semantics, prefix-stable
-replay, immutable traces, reports, CLI behavior, and order determinism.
+malformed input, input size bounds, Unicode/report safety, ingestion semantics,
+prefix-stable replay, immutable traces, reports, CLI behavior, and order
+determinism.
 
 See [`docs/architecture.md`](docs/architecture.md) for design boundaries,
 [`docs/compatibility.md`](docs/compatibility.md) for the versioning contract,

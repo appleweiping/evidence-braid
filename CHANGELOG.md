@@ -5,6 +5,21 @@ Versioning once the first stable release is published.
 
 ## [Unreleased]
 
+### Added
+
+- Explicit read ceilings for the dependency-free adapters: 4 MiB of policy JSON, 64 MiB of
+  event JSONL, and 1 MiB for any single event line. `load_json`, `load_policy`, and
+  `load_events` accept `max_bytes`/`max_line_bytes` so a caller can tighten a bound for one
+  untrusted feed, and refuse a value above the compiled ceiling before opening the file.
+
+### Changed
+
+- Oversized policy or event input is now refused with `InputFormatError` naming the path,
+  the limit, and the offending line number, instead of being read without a bound. Input is
+  never truncated to a prefix that would still parse.
+- Corrected the documented scope boundary that claimed adapter file and line sizes were
+  uncapped, and recorded the caps as a resource bound rather than a security guarantee.
+
 ## [0.2.0] - 2026-09-01
 
 ### Added

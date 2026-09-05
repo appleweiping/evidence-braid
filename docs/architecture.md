@@ -75,12 +75,25 @@ not simulate a clock or pass future events into earlier evaluations. Every
 snapshot contains only its ingestion prefix, so extending a valid stream cannot
 alter an earlier digest. The same engine validates and evaluates each prefix.
 
-### `io.py` and `cli.py`
+### `io.py`, `limits.py`, and `cli.py`
 
 Own filesystem and terminal behavior. JSON objects are parsed with duplicate
 key rejection, UTF-8 failures are wrapped as domain errors, and serialization
 forbids non-finite constants. Core models, engine, and renderers do not read or
 write files. Domain errors produce concise messages and a stable CLI exit code.
+
+Reads are bounded. `limits.py` holds one default and one compiled ceiling for
+each input dimension: policy bytes, event-file bytes, and event-line bytes. A
+loader requests one byte past its limit, so an oversized document is refused
+with `InputFormatError` rather than truncated to a prefix that might still
+parse as a complete decision input. The message carries the path, the limit,
+and the line number where a line limit was exceeded. A caller may tighten a
+bound for one untrusted feed; a value outside `1..ceiling` is a
+`ValidationError` raised before the file is opened, so the ceiling stays a
+property of the build rather than of an argument list. Line lengths are
+measured on encoded bytes before decoding, and `bytes.splitlines` recognizes
+exactly the newline forms Python's text mode normalizes, so a reported line
+number matches the one an operator sees in an editor.
 
 ### `report.py`
 
@@ -102,6 +115,7 @@ of truth.
 10. Appending future replay events cannot change an earlier snapshot.
 11. Public model instances cannot retain caller-owned mutable collections.
 12. Every accepted attribute can be serialized by the strict JSON adapter.
+13. Input beyond a configured size bound is refused, never truncated.
 
 ## Scoring rationale
 
@@ -151,8 +165,14 @@ the dependency-free core unless they can remain optional.
 The engine limits schema ambiguity but cannot prevent a trusted source from
 lying, replaying a new ID, or selecting a misleading correlation group. A
 production boundary should authenticate sources, enforce monotonic or
-idempotent ingestion, cap input sizes, store original bytes, and record policy
-approval separately.
+idempotent ingestion, store original bytes, and record policy approval
+separately.
+
+The adapters cap their own reads, which bounds the memory one load can consume
+and makes an oversized document a refusal instead of a silent truncation. That
+is a resource bound, not a defense against a hostile filesystem: it does not
+authenticate the bytes, notice a file that changes between reads, or apply to
+input a caller supplies through the Python API.
 
 HTML escaping prevents event content from becoming markup in the included
 report. Consumers embedding machine JSON elsewhere must implement the encoding
