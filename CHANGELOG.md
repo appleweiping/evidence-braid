@@ -7,6 +7,18 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Policy schema version 2, and the migration that brings an older document to it.
+  `migrate_policy_document` upgrades one version at a time and returns a `MigrationReport`
+  naming every field it added; `evidence-braid migrate-policy` performs the same upgrade on
+  disk, validates the result before writing it, and can emit that report as JSON. A document
+  declaring a schema this build does not know is refused rather than read with older semantics.
+- `ClaimRule.required_modalities`, the capability schema 1 could not express. `min_modalities`
+  says how many distinct modalities must corroborate a signal; `required_modalities` says which
+  ones must be among them, so a claim that should not escalate without a camera can say so
+  instead of hoping two of anything else does not arrive. It is applied per signal and defaults
+  to empty, which demands nothing.
+- `Policy.source_schema_version`, recording the version a document declared, so an upgraded
+  policy stays distinguishable from one written against the current schema.
 - Opt-in source reliability updating. A policy may declare `reliability_updates` with a
   `prior_weight` and an optional `max_adjustment`; a caller then supplies `Adjudication`
   records — ground truth about whether a named source's observation was correct — through
@@ -29,6 +41,20 @@ Versioning once the first stable release is published.
 
 ### Changed
 
+- `Policy.from_dict` and `load_policy` accept a schema 1 document and upgrade it on the way in.
+  A migration only ever writes down, explicitly, the behaviour the older version already had; it
+  never guesses what an operator would have wanted from a capability that did not exist when they
+  wrote the file. Schema 1 had no way to require a modality, so the upgrade writes an empty
+  requirement, which is the identity for the new gate.
+- The upgrade is therefore decision-preserving, and that is checked rather than trusted: over 300
+  randomized policies and evidence sets, evaluating a schema 1 document and evaluating its upgraded
+  form produce the identical result digest, and adding a requirement is verified never to open a
+  gate that was closed. Regenerating the checked-in reference experiment under its recorded protocol
+  changed exactly one field, `policy_schema_version`; every prediction digest, the dataset digest,
+  the policy SHA-256, and the replay final digest are byte-identical.
+- `Policy` objects constructed directly in Python must now declare
+  `schema_version=CURRENT_POLICY_SCHEMA_VERSION`. Stored documents are unaffected: a schema 1 file
+  keeps loading.
 - Oversized policy or event input is now refused with `InputFormatError` naming the path,
   the limit, and the offending line number, instead of being read without a bound. Input is
   never truncated to a prefix that would still parse.
@@ -40,6 +66,11 @@ Versioning once the first stable release is published.
   against ground truth that is biased, sparse, or hostile.
 - A policy that does not configure `reliability_updates` is unaffected: the result payload omits
   the section entirely and keeps the digest it produced before the feature existed.
+
+### Fixed
+
+- `docs/evaluation.md` described the checked-in reference run as a 60-event replay. The artifact
+  records `event_count: 80`, which is what the run used; the prose now agrees with the artifact.
 
 ## [0.2.0] - 2026-09-01
 

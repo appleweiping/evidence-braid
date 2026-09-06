@@ -10,8 +10,16 @@ from pathlib import Path
 from . import __version__
 from .engine import evaluate
 from .errors import EvidenceBraidError, InputFormatError
-from .io import canonical_json, load_adjudications, load_events, load_policy, write_text
-from .models import parse_timestamp
+from .io import (
+    canonical_json,
+    load_adjudications,
+    load_events,
+    load_json,
+    load_policy,
+    write_text,
+)
+from .migrations import CURRENT_POLICY_SCHEMA_VERSION, migrate_policy_document
+from .models import Policy, parse_timestamp
 from .replay import replay
 from .report import render_html, render_svg
 
@@ -46,6 +54,18 @@ def _parser() -> argparse.ArgumentParser:
     replay_parser.add_argument(
         "--adjudications", type=Path, help="optional adjudicated-outcome JSONL file"
     )
+
+    migrate_parser = subparsers.add_parser(
+        "migrate-policy",
+        help=f"upgrade a policy document to schema {CURRENT_POLICY_SCHEMA_VERSION}",
+    )
+    migrate_parser.add_argument("policy", type=Path, help="policy JSON file")
+    migrate_parser.add_argument(
+        "--output", default="-", help="upgraded policy destination, or - for stdout"
+    )
+    migrate_parser.add_argument(
+        "--report", help="optional JSON destination for the list of changes"
+    )
     return parser
 
 
@@ -77,9 +97,26 @@ def _emit_error(error: EvidenceBraidError) -> None:
         sys.stderr.write(f"{escaped}\n")
 
 
+def _migrate_policy(args: argparse.Namespace) -> None:
+    """Rewrite one policy document at the current schema and report the changes.
+
+    The upgraded document is validated before it is written, so this never emits
+    a file that ``load_policy`` would then refuse.
+    """
+
+    document, report = migrate_policy_document(load_json(args.policy))
+    Policy.from_dict(document)
+    _emit(args.output, canonical_json(document))
+    if args.report:
+        write_text(args.report, canonical_json(report.to_dict()))
+
+
 def run(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "migrate-policy":
+            _migrate_policy(args)
+            return 0
         policy = load_policy(args.policy)
         events = load_events(args.events)
         adjudications = load_adjudications(args.adjudications) if args.adjudications else []

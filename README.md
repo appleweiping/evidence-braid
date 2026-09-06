@@ -67,9 +67,15 @@ evidence-braid replay examples/policy.json examples/events.jsonl \
   --output replay.jsonl
 ```
 
+Upgrade a policy written against an older schema, and see exactly what changed:
+
+```bash
+evidence-braid migrate-policy examples/policy.json   --output policy-current.json   --report changes.json
+```
+
 Use `-` as the output path to write machine output to standard output. Errors
-are written to standard error and return exit code `2`. Both commands accept
-`--adjudications` when a policy opts into
+are written to standard error and return exit code `2`. `evaluate` and `replay`
+accept `--adjudications` when a policy opts into
 [reliability updating](#reliability-updating-optional).
 
 ## A complete event
@@ -122,7 +128,7 @@ Policies are versioned JSON documents:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "policy_id": "operations-demo-v1",
   "default_source_reliability": 0.7,
   "sources": {
@@ -145,11 +151,32 @@ Policies are versioned JSON documents:
       "quorum": 2,
       "min_sources": 2,
       "min_modalities": 2,
-      "min_evidence_confidence": 0.2
+      "min_evidence_confidence": 0.2,
+      "required_modalities": ["vision"]
     }
   }
 }
 ```
+
+A policy written against an older schema still loads. It is upgraded on the way
+in, and the upgrade only ever writes down, explicitly, the behaviour the older
+version already had; it never guesses what an operator would have wanted from a
+capability that did not exist when they wrote the file. `evidence-braid
+migrate-policy` performs the same upgrade on disk and reports every field it
+added, so the change can be reviewed before it is adopted:
+
+```bash
+evidence-braid migrate-policy policy.json --output policy-v2.json --report changes.json
+```
+
+A document declaring a schema this build does not know is refused rather than
+read with older semantics. `Policy.source_schema_version` records the version a
+document declared, so an upgraded policy stays distinguishable from one written
+against the current schema without re-reading the file.
+
+`examples/policy.json` is deliberately left at schema 1, so every run of the
+quick start and of CI exercises the upgrade against a real file rather than only
+against a fixture.
 
 The source-specific reliability wins when present; otherwise the default is
 used. Half-life works the same way for modality overrides and the default.
@@ -194,7 +221,15 @@ independence gate when it satisfies all three:
 
 - number of qualifying groups is at least `quorum`;
 - number of qualifying sources is at least `min_sources`;
-- number of qualifying modalities is at least `min_modalities`.
+- number of qualifying modalities is at least `min_modalities`;
+- every modality in `required_modalities` is among them.
+
+`min_modalities` says how many distinct modalities must corroborate;
+`required_modalities` says which ones must be among them. A claim that should not
+escalate without a camera cannot express that by counting alone, because two of
+anything else would satisfy the count. The requirement is applied per signal, so
+naming a modality that only the supporting evidence carries will hold back a
+`reject` as well as an `escalate`. It defaults to empty, which demands nothing.
 
 `escalate` requires the support gate, support threshold, and positive
 support-minus-contradiction margin. `reject` applies the symmetric conditions to
@@ -411,7 +446,9 @@ Known scope boundaries:
   auditable, and still wrong;
 - correlation groups are declared, not inferred;
 - one event addresses one claim and one signal;
-- policy migration beyond schema version 1 is not yet implemented;
+- a policy schema is upgraded forward only, one version at a time, and only where
+  the upgrade is decision-preserving; a change that would move a decision belongs
+  in a major release with a migration note, not in an automatic upgrade;
 - the HTML report is a portable snapshot, not a dashboard or evidence store.
 
 The dependency-free adapters do cap what one read consumes. `load_json` and

@@ -45,6 +45,24 @@ conversion-check threshold (with an explicit 640 fallback on other runtimes),
 without converting the candidate to text first. Only exact built-in JSON scalar
 types are accepted for attributes.
 
+### `migrations.py`
+
+Holds the ordered upgrades between policy schema versions, one step per version,
+plus the report of what each step changed.
+
+A stored policy outlives the release that wrote it. Refusing an older document
+would make every schema change a coordinated rewrite of every operator's files;
+quietly reinterpreting one would change decisions without saying so. A migration
+does the third thing: it writes down, explicitly, the behaviour the older version
+already had, and reports every field it added.
+
+That constraint is what keeps a migration decision-preserving, which
+`tests/test_migrations.py` checks over randomized policies rather than trusting.
+`Policy.source_schema_version` records the version a document declared, so an
+upgraded policy stays distinguishable from one written against the current
+schema. A document declaring a schema this build does not know is refused rather
+than read with older semantics.
+
 ### `decay.py`
 
 Converts one event into a `WeightedEvent`. It contains no aggregation or policy
@@ -229,7 +247,16 @@ behavior from arbitrary event attributes. Keep parsing strict and update:
 3. decision trace;
 4. architecture documentation;
 5. boundary and determinism tests;
-6. checked-in example artifacts.
+6. checked-in example artifacts;
+7. a migration in `migrations.py`, so documents written against the previous
+   schema keep loading.
+
+A new field therefore needs a permissive default that is the identity for
+whatever gate or computation it feeds. `required_modalities` is the worked
+example: an empty requirement is satisfied by any evidence, so an upgraded
+schema 1 policy decides exactly as the original did. A change that cannot offer
+such a default is not an automatic upgrade; it belongs in a major release with a
+migration note.
 
 Adapters for databases, queues, signatures, or model runtimes belong outside
 the dependency-free core unless they can remain optional.

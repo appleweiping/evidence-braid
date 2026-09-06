@@ -497,10 +497,15 @@ def _summarize_signal(
     ]
     sources = tuple(sorted({item.representative.event.source for item in qualifying}))
     modalities = tuple(sorted({item.representative.event.modality.value for item in qualifying}))
+    # `min_modalities` says how many distinct modalities must corroborate;
+    # `required_modalities` says which ones must be among them. A claim needing a
+    # camera cannot express that by counting alone, because two of anything else
+    # would satisfy the count.
     gate_passed = (
         len(qualifying) >= rule.quorum
         and len(sources) >= rule.min_sources
         and len(modalities) >= rule.min_modalities
+        and set(rule.required_modalities) <= set(modalities)
     )
     return SignalSummary(
         signal=signal,

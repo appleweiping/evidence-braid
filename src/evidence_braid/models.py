@@ -16,6 +16,12 @@ from types import MappingProxyType
 from typing import Any, TypeVar
 
 from .errors import ValidationError
+from .migrations import (
+    CURRENT_POLICY_SCHEMA_VERSION,
+    EARLIEST_POLICY_SCHEMA_VERSION,
+    migrate_policy_document,
+    policy_schema_version,
+)
 
 _EnumT = TypeVar("_EnumT", bound=StrEnum)
 
@@ -219,6 +225,23 @@ def _canonical_text_tuple(value: Any, path: str) -> tuple[str, ...]:
     if len(set(items)) != len(items):
         raise ValidationError(f"{path} must not contain duplicates")
     return tuple(sorted(items))
+
+
+def _modality_tuple(value: Any, path: str) -> tuple[str, ...]:
+    """Validate a set of modality names into sorted, unique order.
+
+    Sorting makes the stored value independent of how the policy happened to
+    list them, so two policies that demand the same modalities compare equal.
+    """
+    names = _canonical_text_tuple(value, path)
+    supported = {modality.value for modality in Modality}
+    for index, name in enumerate(names):
+        if name not in supported:
+            raise ValidationError(
+                f"{path}[{index}] is not a supported modality; "
+                f"expected one of {', '.join(sorted(supported))}"
+            )
+    return names
 
 
 def _freeze_json(
@@ -618,6 +641,7 @@ class ClaimRule:
     min_sources: int
     min_modalities: int
     min_evidence_confidence: float
+    required_modalities: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -661,6 +685,11 @@ class ClaimRule:
                 1.0,
             ),
         )
+        object.__setattr__(
+            self,
+            "required_modalities",
+            _modality_tuple(self.required_modalities, "claim_rule.required_modalities"),
+        )
 
     @classmethod
     def from_dict(cls, raw: Any, path: str) -> ClaimRule:
@@ -673,6 +702,7 @@ class ClaimRule:
             "min_sources",
             "min_modalities",
             "min_evidence_confidence",
+            "required_modalities",
         }
         _only(data, allowed, path)
         return cls(
@@ -695,11 +725,23 @@ class ClaimRule:
                 0.0,
                 1.0,
             ),
+            required_modalities=_modality_tuple(
+                data.get("required_modalities", ()), f"{path}.required_modalities"
+            ),
         )
 
 
 @dataclass(frozen=True, slots=True)
 class Policy:
+    """A validated policy at the schema version this build evaluates.
+
+    ``schema_version`` is always :data:`CURRENT_POLICY_SCHEMA_VERSION`, because a
+    document written against an older schema is upgraded before it is validated.
+    ``source_schema_version`` records the version the document declared, so a
+    caller can tell an upgraded policy from one written against this schema
+    without re-reading the file.
+    """
+
     schema_version: int
     policy_id: str
     default_source_reliability: float
@@ -707,10 +749,24 @@ class Policy:
     decay: DecayPolicy
     claims: Mapping[str, ClaimRule]
     reliability_updates: ReliabilityUpdatePolicy | None = None
+    source_schema_version: int = CURRENT_POLICY_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ValidationError("policy.schema_version must be 1")
+        if (
+            type(self.schema_version) is not int
+            or self.schema_version != CURRENT_POLICY_SCHEMA_VERSION
+        ):
+            raise ValidationError(f"policy.schema_version must be {CURRENT_POLICY_SCHEMA_VERSION}")
+        if (
+            type(self.source_schema_version) is not int
+            or not EARLIEST_POLICY_SCHEMA_VERSION
+            <= self.source_schema_version
+            <= CURRENT_POLICY_SCHEMA_VERSION
+        ):
+            raise ValidationError(
+                f"policy.source_schema_version must be between "
+                f"{EARLIEST_POLICY_SCHEMA_VERSION} and {CURRENT_POLICY_SCHEMA_VERSION}"
+            )
         object.__setattr__(self, "policy_id", _text(self.policy_id, "policy.policy_id"))
         object.__setattr__(
             self,
@@ -749,7 +805,16 @@ class Policy:
 
     @classmethod
     def from_dict(cls, raw: Any) -> Policy:
-        data = _mapping(raw, "policy")
+        """Validate a policy document, upgrading an older schema on the way in.
+
+        The upgrade is explicit and reported by
+        :func:`~evidence_braid.migrations.migrate_policy_document`; use that
+        directly to see what changed before adopting it.
+        """
+
+        declared = policy_schema_version(_mapping(raw, "policy"))
+        migrated, _report = migrate_policy_document(raw)
+        data = _mapping(migrated, "policy")
         _only(
             data,
             {
@@ -763,9 +828,6 @@ class Policy:
             },
             "policy",
         )
-        version = data.get("schema_version")
-        if type(version) is not int or version != 1:
-            raise ValidationError("policy.schema_version must be 1")
         policy_id = _required_string(data, "policy_id", "policy")
         default_reliability = _number(
             data.get("default_source_reliability", 1.0),
@@ -789,7 +851,8 @@ class Policy:
         # feature has to be asked for by name before any weight can move.
         updates_raw = data.get("reliability_updates")
         return cls(
-            schema_version=version,
+            schema_version=CURRENT_POLICY_SCHEMA_VERSION,
+            source_schema_version=declared,
             policy_id=policy_id,
             default_source_reliability=default_reliability,
             sources=MappingProxyType(sources),

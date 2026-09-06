@@ -67,7 +67,7 @@ protocols as if they were interchangeable.
 ## Checked-in reference run
 
 [`experiments/results/synthetic-baselines-windows-python314.json`](../experiments/results/synthetic-baselines-windows-python314.json)
-is one 120-scenario, seed-1729 run with five repetitions and a 60-event replay. Its complete machine
+is one 120-scenario, seed-1729 run with five repetitions and an 80-event replay. Its complete machine
 metadata is part of the artifact. It is checked in to make the result schema, workload digest,
 prediction hashes, calibration bins, and protocol reviewable—not as a cross-machine performance
 claim.

@@ -11,6 +11,10 @@ from conftest import event_dict, policy_dict
 
 from evidence_braid.errors import InputFormatError, ValidationError
 from evidence_braid.io import canonical_json
+from evidence_braid.migrations import (
+    CURRENT_POLICY_SCHEMA_VERSION,
+    EARLIEST_POLICY_SCHEMA_VERSION,
+)
 from evidence_braid.models import (
     MAX_ATTRIBUTE_DEPTH,
     MAX_ATTRIBUTE_INTEGER_DIGITS,
@@ -107,8 +111,17 @@ def test_event_rejects_invalid_signal(signal: object) -> None:
 
 
 def test_policy_rejects_unknown_schema_version() -> None:
+    # Schema 2 is the current version, so an unknown one is now above it: a
+    # newer document is refused rather than read with older semantics.
     raw = policy_dict()
-    raw["schema_version"] = 2
+    raw["schema_version"] = CURRENT_POLICY_SCHEMA_VERSION + 1
+    with pytest.raises(ValidationError, match="schema_version"):
+        Policy.from_dict(raw)
+
+
+def test_policy_rejects_a_version_below_the_earliest_supported() -> None:
+    raw = policy_dict()
+    raw["schema_version"] = EARLIEST_POLICY_SCHEMA_VERSION - 1
     with pytest.raises(ValidationError, match="schema_version"):
         Policy.from_dict(raw)
 
@@ -353,7 +366,7 @@ def test_direct_policy_construction_and_replace_snapshot_mappings() -> None:
     sources = dict(parsed.sources)
     claims = dict(parsed.claims)
     policy = Policy(
-        schema_version=1,
+        schema_version=CURRENT_POLICY_SCHEMA_VERSION,
         policy_id=" p ",
         default_source_reliability=1,
         sources=sources,
