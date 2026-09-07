@@ -1,5 +1,11 @@
 """Evidence Braid public API."""
 
+from .artifacts import (
+    ArtifactBundleLimits,
+    VerifiedArtifactBundle,
+    build_artifact_bundle,
+    verify_artifact_bundle,
+)
 from .authority import (
     ActorKind,
     ArtifactReference,
@@ -42,6 +48,7 @@ from .workflow import (
 __all__ = [
     "ActorKind",
     "Adjudication",
+    "ArtifactBundleLimits",
     "ArtifactReference",
     "AuthorityPolicy",
     "AuthorityRole",
@@ -69,6 +76,7 @@ __all__ = [
     "Signal",
     "ValidationError",
     "Verdict",
+    "VerifiedArtifactBundle",
     "WorkflowAction",
     "WorkflowActor",
     "WorkflowBundle",
@@ -76,6 +84,7 @@ __all__ = [
     "WorkflowState",
     "WorkflowTransition",
     "analyze_robustness",
+    "build_artifact_bundle",
     "build_ledger",
     "build_provenance",
     "build_workflow",
@@ -90,6 +99,7 @@ __all__ = [
     "replay",
     "replay_workflow",
     "robustness",
+    "verify_artifact_bundle",
     "write_ledger",
     "write_workflow_bundle",
 ]

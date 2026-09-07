@@ -7,6 +7,12 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Closed content-addressed artifact ZIPs with complete reference inventory,
+  streamed deduplicated objects, canonical ZIP32 preflight bounds, independently
+  anchored authority replay and no-replace atomic publication. Includes offline
+  relocation/process verification, CLI and explicit privacy/resource contracts.
+- Durable-ledger file export now stages, flushes and fsyncs before atomic file
+  replacement, preserving existing output on prepublication failure.
 - Authority-checked claim workflows with immutable actor/scope/role policies,
   per-claim revision preconditions, evidence/artifact bindings, independent
   human review quorum, rejection and independent revocation. Separate workflow

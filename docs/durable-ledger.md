@@ -133,6 +133,14 @@ filesystem size or database corruption scan time.
 
 ## Validation evidence
 
+Portable `write_ledger` output now uses same-directory staging, file flush/fsync
+and atomic replacement only after serialization succeeds. Failures before the
+replace preserve an existing destination. Parent directories are created by
+this export API. This differs from closed artifact archive publication, which
+requires an existing parent and atomically refuses replacement. Neither helper
+claims directory-metadata power-loss durability. Ordinary close errors preserve
+active validation errors/interrupts; cleanup failures are reported explicitly.
+
 `tests/test_durable_ledger.py` covers independently computed digest input,
 v1 compatibility, canonical round-trips, nested mutation, malformed records,
 tampering, trusted-head rollback detection, separate-process and threaded

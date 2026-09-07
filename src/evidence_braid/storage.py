@@ -13,8 +13,9 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from ._atomic import staged_output
 from .errors import InputFormatError, ValidationError
-from .io import _decode, _loads, _read_bounded, canonical_json, write_text
+from .io import _decode, _loads, _read_bounded, canonical_json
 from .ledger import _GENESIS_V2, MAX_LEDGER_ENTRIES, EvidenceLedger, LedgerEntry, _digest, _hash
 from .models import EvidenceEvent
 
@@ -38,15 +39,16 @@ def load_ledger(path: str | Path, *, expected_head: str | None = None) -> Eviden
 def write_ledger(path: str | Path, ledger: EvidenceLedger) -> None:
     """Verify and write one portable snapshot under import bounds.
 
-    This legacy export writes directly, so interruption may leave a partial
-    destination. It does not share the workflow bundle's atomic publisher.
+    The complete snapshot is staged and fsynced before atomically replacing the
+    destination. This is not CAS or directory-metadata power-loss durability.
     """
     if not isinstance(ledger, EvidenceLedger) or not ledger.verify():
         raise ValidationError("cannot export an invalid ledger")
     content = canonical_json(ledger.to_dict(), pretty=False) + "\n"
     if len(content.encode("utf-8")) > MAX_LEDGER_BYTES:
         raise ValidationError("ledger export exceeds the 64 MiB limit")
-    write_text(path, content)
+    with staged_output(path, replace=True, create_parents=True) as handle:
+        handle.write(content.encode("utf-8"))
 
 
 class SQLiteLedger:

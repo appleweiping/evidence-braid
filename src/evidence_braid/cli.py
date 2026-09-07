@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from . import __version__
+from .artifacts import build_artifact_bundle, verify_artifact_bundle
 from .authority import AuthorityPolicy
 from .comparison import compare_policies, decision_impact
 from .engine import evaluate
@@ -131,6 +132,25 @@ def _parser() -> argparse.ArgumentParser:
     workflow_parser.add_argument("--expected-head", help="independently retained workflow head")
     workflow_parser.add_argument("--expected-evidence-head", help="retained evidence ledger head")
     workflow_parser.add_argument("--output", default="-", help="state JSON destination, or -")
+    bundle_parser = subparsers.add_parser(
+        "artifact-bundle", help="create or verify a closed artifact ZIP"
+    )
+    bundle_commands = bundle_parser.add_subparsers(dest="bundle_command", required=True)
+    for command in ("create", "verify"):
+        operation = bundle_commands.add_parser(command)
+        operation.add_argument("authority", type=Path, help="separately trusted authority JSON")
+        operation.add_argument(
+            "archive", type=Path, help="closed ZIP path (create refuses replacement)"
+        )
+        operation.add_argument("--expected-head", required=True, help="retained workflow head")
+        operation.add_argument(
+            "--expected-evidence-head", required=True, help="retained evidence head"
+        )
+        if command == "create":
+            operation.add_argument("--workflow", type=Path, required=True, help="workflow JSON")
+            operation.add_argument("--artifact", action="append", default=[], metavar="ID=FILE")
+        else:
+            operation.add_argument("--expected-bundle-digest", help="retained closed-bundle digest")
     return parser
 
 
@@ -241,9 +261,39 @@ def _ledger(args: argparse.Namespace) -> None:
     _emit(args.output, content)
 
 
+def _artifact_bundle(args: argparse.Namespace) -> None:
+    authority = AuthorityPolicy.from_dict(load_json(args.authority))
+    if args.bundle_command == "create":
+        workflow = load_workflow_bundle(
+            args.workflow,
+            authority=authority,
+            expected_head=args.expected_head,
+            expected_evidence_head=args.expected_evidence_head,
+        )
+        sources: dict[str, Path] = {}
+        for mapping in args.artifact:
+            identifier, separator, source = mapping.partition("=")
+            if not separator or not identifier or not source or identifier in sources:
+                raise InputFormatError("--artifact requires unique nonempty ID=FILE mappings")
+            sources[identifier] = Path(source)
+        result = build_artifact_bundle(args.archive, workflow, sources, authority=authority)
+    else:
+        result = verify_artifact_bundle(
+            args.archive,
+            authority=authority,
+            expected_head=args.expected_head,
+            expected_evidence_head=args.expected_evidence_head,
+            expected_bundle_digest=args.expected_bundle_digest,
+        )
+    _emit("-", canonical_json(result.to_dict()))
+
+
 def run(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "artifact-bundle":
+            _artifact_bundle(args)
+            return 0
         if args.command == "workflow-replay":
             authority = AuthorityPolicy.from_dict(load_json(args.authority))
             bundle = load_workflow_bundle(

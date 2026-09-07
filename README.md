@@ -63,6 +63,19 @@ your own trusted policy and exported workflow. Actor names are declarations,
 Retain workflow heads independently to detect replacement or rollback. This
 layer does not change existing scoring behavior or encode actions as evidence.
 
+## Closed artifact exchange
+
+`build_artifact_bundle` packages the actual bytes referenced by a workflow into
+a content-addressed ZIP, with exact inventory and independently replayed state.
+`verify_artifact_bundle` streams byte verification using a separately trusted
+authority policy and mandatory workflow/evidence heads. Publication refuses
+replacement; no members are extracted or downloaded.
+
+Run `python examples/closed_artifacts.py` for an offline example that deletes the
+source attachment and verifies the moved archive. See
+[format, CLI, limits and privacy](docs/closed-artifacts.md) before exchanging
+real evidence. Archive validity is not actor authentication or proof of truth.
+
 ## Quick start
 
 Clone the repository, create a virtual environment, and install the package:

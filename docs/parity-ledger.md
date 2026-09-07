@@ -35,7 +35,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 | Durable append-only history (`itself/ledger.py`, `ledger_agent/db.py`) | New `storage.py`; transactions, separate-process reopen/append, rollback/crash tests | Implemented bounded local slice; full reference backend behavior including Postgres and remote ingestion remains open. |
 | Strict portable hash receipts (`itself/receipts.py`, `ledger_agent/receipts.py`) | `ledger.py` v1 reader/v2 chain plus authority/evidence/manifest-bound workflow envelopes | Partial: strict offline workflow replay and authority/action binding now exist; minimized reasoning disclosures and external attestations remain open. |
 | Graph/reference provenance (`itself/bundle.py`, `ledger_agent/tool_receipts.py`) | `provenance.py` links plus workflow evidence/claim/scope checks and artifact content commitments | Partial: artifact references now have content bindings and unresolved-reference rejection; execution/tool lineage and artifact custody remain open. |
-| Closed artifact bundle publication (`itself/evidence_bundle.py`) | No equivalent yet | Open: manifest inventory, bounded streaming file digests, path confinement, no-replace atomic publication, and independent verification. |
+| Closed artifact bundle publication (`itself/evidence_bundle.py`) | `artifacts.py`: closed canonical content-addressed ZIP32, streamed object digests, exact inventory, no-replace atomic publication and externally anchored replay | Implemented bounded original local profile; not upstream directory/wire equivalence. Authenticated custody, signatures and external artifact-store integrations remain open. |
 | Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | Strict Python models and policy migrations | Open: packaged JSON Schemas/catalog/checksums, language-independent fixtures and a second implementation of verification. |
 | External inference/check boundary (`itself/inference.py`) | Events accepted from caller | Open: bounded structured request/response adapters, artifact retention, explicit external check result and authority lifecycle. |
 | Persistent query and pagination (`ledger_agent/server/api.py`, `test_export_pagination.py`) | Whole-store verified snapshot | Open: bounded event/time/claim/source filters, pagination contract, stable snapshot reads and concurrent-update tests. |
@@ -90,3 +90,35 @@ parity completion criterion. New explicit open boundaries include authenticated
 principals, authority-policy evolution, reopening/migration between workflow
 contexts, transactionally persisted concurrent workflow publication, packaged
 artifact bytes, richer epistemic states and independent non-Python conformance.
+
+## Closed-artifact increment verification
+
+The original profile in [closed artifact bundles](closed-artifacts.md) now
+packages actual committed bytes alongside workflow/evidence receipts and replayed
+state. It closes that specific packaged-byte gap from the preceding increment,
+not upstream directory/wire compatibility or authenticated custody. The frozen
+first-party [reference bundle contract](https://github.com/Greater-Expanse/itself/blob/b6057fe96fdecdec34ec28afdffc0628549e8831/docs/EVIDENCE_BUNDLES.md)
+was used to identify the inventory/publication/independent-verification acceptance
+surface; no implementation code was copied.
+
+On Windows build 26200 / Python 3.14.5, the full suite passed **788 tests**, no
+skips, with **98.95%** statement/branch coverage and the unchanged 98% gate.
+The 88 new artifact cases reached **99.77%** in `artifacts.py`, including all
+114 branches. The separate atomic-publication helper reached **100%**. Resource
+warnings were promoted to errors. Ruff lint/format, strict Mypy (25 source
+modules), Bandit, wheel/sdist builds, strict Twine metadata and wheel-content
+checks passed locally. The existing editable package version in the lock was
+mechanically synchronized from stale 0.3.0 metadata to the already-declared
+0.5.0; no dependency or project version was changed.
+
+Behavioral evidence includes real no-replace hard-link publication on the local
+Windows filesystem, refusal of an existing/concurrently won destination, failed
+staging/close/fsync cleanup, exact reproducible ZIP bytes, independent process
+verification after moving the archive and deleting source files, anchored
+state recomputation, CRC/SHA tampering, malformed directory/local headers,
+forbidden archive features and metadata, and source mutation during chunked
+copying. Source-read work is capped at **512 MiB including duplicate mappings**,
+separately from the 512 MiB unique-object storage ceiling. Filesystems without
+hard-link support intentionally fail closed; no cross-filesystem fallback is
+claimed. These are local results, not remote CI or a hard process-memory/runtime
+sandbox. The remaining whole-repository rows stay open.
