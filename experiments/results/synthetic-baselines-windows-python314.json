@@ -23,7 +23,7 @@
     "policy_schema_version": 2,
     "policy_sha256": "sha256:ac47767a886d7c1ed64cdb6bcd9950075777544aafa02aa9fd70795715ba4b88"
   },
-  "generated_at": "2026-09-06T19:45:22.371538Z",
+  "generated_at": "2026-09-07T15:09:51.664912Z",
   "interpretation": "Synthetic software characterization only; no operational accuracy or calibration claim.",
   "method_semantics": {
     "evidence_braid": "configured correlation, decay, reliability, threshold, and independence gates",
@@ -116,10 +116,10 @@
       },
       "prediction_sha256": "b584b94718a5976c5630afd487cf2fc1e5cd91fab79e13d554012af1e6ad2888",
       "timing": {
-        "max_us_per_operation": 334.414,
-        "median_us_per_operation": 285.403,
-        "min_us_per_operation": 235.575,
-        "p95_us_per_operation": 330.443
+        "max_us_per_operation": 610.285,
+        "median_us_per_operation": 524.053,
+        "min_us_per_operation": 465.961,
+        "p95_us_per_operation": 598.983
       }
     },
     "majority_vote": {
@@ -200,10 +200,10 @@
       },
       "prediction_sha256": "b09c13aba318fb9fdd20524a0d62f630500bd58c0831936e8acf610c27e74c94",
       "timing": {
-        "max_us_per_operation": 16.922,
-        "median_us_per_operation": 13.103,
-        "min_us_per_operation": 13.01,
-        "p95_us_per_operation": 16.178
+        "max_us_per_operation": 49.377,
+        "median_us_per_operation": 40.21,
+        "min_us_per_operation": 28.779,
+        "p95_us_per_operation": 49.229
       }
     },
     "reliability_weighted_vote": {
@@ -305,10 +305,10 @@
       },
       "prediction_sha256": "13766df57111709d72f54d4274907bf93d0c16a611d2d51903eb6994366467fd",
       "timing": {
-        "max_us_per_operation": 16.509,
-        "median_us_per_operation": 15.915,
-        "min_us_per_operation": 15.812,
-        "p95_us_per_operation": 16.446
+        "max_us_per_operation": 53.007,
+        "median_us_per_operation": 52.767,
+        "min_us_per_operation": 33.278,
+        "p95_us_per_operation": 52.964
       }
     }
   },
@@ -323,15 +323,15 @@
     "final_digest": "sha256:561ee0c5b5b1aac1750022db434a87316f089ed1528de62280ef7957e102d491",
     "snapshot_count": 80,
     "timing": {
-      "max_us_per_operation": 2559.1,
-      "median_us_per_operation": 1864.895,
-      "min_us_per_operation": 1667.571,
-      "p95_us_per_operation": 2431.234
+      "max_us_per_operation": 6583.249,
+      "median_us_per_operation": 3358.324,
+      "min_us_per_operation": 3165.905,
+      "p95_us_per_operation": 5997.64
     }
   },
   "schema_version": 1,
   "software": {
     "name": "evidence-braid",
-    "version": "0.2.0"
+    "version": "0.3.0"
   }
 }

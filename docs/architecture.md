@@ -29,7 +29,8 @@ Defines frozen event and policy dataclasses, enumerations, timestamp
 normalization, and schema validation. It is the trust boundary for untyped
 input. Unknown keys, non-finite numbers, invalid Unicode/XML text, invalid
 ranges, unsupported schema types or versions, and naive timestamps are rejected
-here. Nested attributes are validated as finite JSON and frozen. The I/O layer
+here. Nested attributes are validated as finite JSON, bounded to 64 levels and
+1,000,000 values, and frozen. The I/O layer
 rejects duplicate object keys before model construction.
 Observation and ingestion clocks may differ; the engine enforces the policy's
 explicit future-skew limit.
@@ -39,11 +40,18 @@ sequence fields are copied into immutable representations, so callers cannot
 bypass the trust boundary with direct construction or `dataclasses.replace`.
 Timestamps become built-in UTC `datetime` values; mutable or behavior-changing
 subclasses are rejected.
-Attribute traversal is capped at 64 levels and fails with `ValidationError`.
+Attribute traversal is capped at 64 levels and 1,000,000 values and fails with
+`ValidationError`.
 Integers accepted by public models are capped at CPython's stable 640-digit
 conversion-check threshold (with an explicit 640 fallback on other runtimes),
 without converting the candidate to text first. Only exact built-in JSON scalar
 types are accepted for attributes.
+
+Policy migrations use that same bounded JSON snapshot before applying a version
+step, so caller mutation, reference cycles, non-JSON state, and non-terminating
+custom mappings cannot escape or stall the migration boundary. Migration reports
+deeply snapshot their notes, cap direct Python sequences at 100,000 notes, and
+revalidate every nested note before serialization.
 
 ### `comparison.py`
 

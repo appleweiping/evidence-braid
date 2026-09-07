@@ -19,15 +19,29 @@ the same evidence and reports the claims whose outcome actually moved.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from itertools import islice
 from typing import Any
 
 from .engine import evaluate
 from .errors import ValidationError
 from .migrations import CURRENT_POLICY_SCHEMA_VERSION
-from .models import Adjudication, EvidenceEvent, Policy
+from .models import (
+    MAX_ATTRIBUTE_NODES,
+    Adjudication,
+    EvidenceEvent,
+    Outcome,
+    Policy,
+    _freeze_json,
+    _nonnegative_int,
+    _text,
+    _thaw_json,
+    format_timestamp,
+    parse_timestamp,
+)
 
 # What a change does to the gate it belongs to.
 TIGHTENS = "tightens"
@@ -36,6 +50,8 @@ STRUCTURAL = "structural"
 UNORDERED = "unordered"
 
 DIRECTIONS = (TIGHTENS, LOOSENS, STRUCTURAL, UNORDERED)
+_OUTCOME_LABELS = frozenset(outcome.value for outcome in Outcome) | {"not evaluated"}
+_RESULT_DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,21 +65,43 @@ class PolicyChange:
     effect: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.path, str) or not self.path:
-            raise ValidationError("change path must be a non-empty string")
+        object.__setattr__(self, "path", _text(self.path, "change.path"))
         if self.direction not in DIRECTIONS:
             raise ValidationError(f"change direction must be one of {', '.join(DIRECTIONS)}")
-        if not isinstance(self.effect, str) or not self.effect:
-            raise ValidationError("change effect must be a non-empty string")
+        object.__setattr__(self, "effect", _text(self.effect, "change.effect"))
+        object.__setattr__(
+            self,
+            "before",
+            _freeze_json(self.before, "change.before", allow_frozen_sequences=True),
+        )
+        object.__setattr__(
+            self,
+            "after",
+            _freeze_json(self.after, "change.after", allow_frozen_sequences=True),
+        )
 
-    def to_dict(self) -> dict[str, Any]:
+    def _validated_snapshot(self) -> PolicyChange:
+        return PolicyChange(
+            path=self.path,
+            before=self.before,
+            after=self.after,
+            direction=self.direction,
+            effect=self.effect,
+        )
+
+    def _to_dict_unchecked(self) -> dict[str, Any]:
         return {
             "path": self.path,
-            "before": self.before,
-            "after": self.after,
+            "before": _thaw_json(self.before),
+            "after": _thaw_json(self.after),
             "direction": self.direction,
             "effect": self.effect,
         }
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return detached JSON after revalidating the frozen shell."""
+
+        return self._validated_snapshot()._to_dict_unchecked()
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,27 +110,56 @@ class PolicyComparison:
 
     changes: tuple[PolicyChange, ...]
 
+    def __post_init__(self) -> None:
+        if isinstance(self.changes, str | bytes) or not isinstance(self.changes, Sequence):
+            raise ValidationError("comparison.changes must be a sequence of PolicyChange objects")
+        snapshots: list[PolicyChange] = []
+        for index, change in enumerate(islice(iter(self.changes), MAX_ATTRIBUTE_NODES + 1)):
+            if index == MAX_ATTRIBUTE_NODES:
+                raise ValidationError(
+                    f"comparison.changes may contain at most {MAX_ATTRIBUTE_NODES} entries"
+                )
+            if not isinstance(change, PolicyChange):
+                raise ValidationError(
+                    f"comparison.changes[{index}] must be a PolicyChange instance"
+                )
+            snapshots.append(change._validated_snapshot())
+        changes = tuple(snapshots)
+        changes = tuple(sorted(changes, key=lambda change: (change.path, change.effect)))
+        keys = {(change.path, change.effect) for change in changes}
+        if len(keys) != len(changes):
+            raise ValidationError("comparison.changes contains duplicate entries")
+        object.__setattr__(self, "changes", changes)
+
     @property
     def identical(self) -> bool:
-        """Whether the two policies decide identically on every input."""
+        """Whether the comparison found no policy-field differences."""
 
         return not self.changes
 
-    def counts(self) -> dict[str, int]:
-        """How many changes fall in each direction."""
-
+    def _counts_unchecked(self) -> dict[str, int]:
         tally = dict.fromkeys(DIRECTIONS, 0)
         for change in self.changes:
             tally[change.direction] += 1
         return tally
 
-    def to_dict(self) -> dict[str, Any]:
+    def counts(self) -> dict[str, int]:
+        """How many changes fall in each direction after revalidation."""
+
+        return PolicyComparison(self.changes)._counts_unchecked()
+
+    def _to_dict_unchecked(self) -> dict[str, Any]:
         return {
             "identical": self.identical,
             "change_count": len(self.changes),
-            "counts": self.counts(),
-            "changes": [change.to_dict() for change in self.changes],
+            "counts": self._counts_unchecked(),
+            "changes": [change._to_dict_unchecked() for change in self.changes],
         }
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return detached JSON after revalidating every nested change."""
+
+        return PolicyComparison(self.changes)._to_dict_unchecked()
 
 
 def _number(value: float) -> float:
@@ -360,24 +427,33 @@ def _compare_reliability_updates(before: Policy, after: Policy) -> list[PolicyCh
             )
         ]
     changes: list[PolicyChange] = []
-    change = _threshold_change(
-        "reliability_updates.prior_weight",
-        old_updates.prior_weight,
-        new_updates.prior_weight,
-        higher_tightens=True,
-        effect_noun="the weight of the declared reliability",
-    )
-    if change is not None:
-        changes.append(change)
-    change = _threshold_change(
-        "reliability_updates.max_adjustment",
-        old_updates.max_adjustment,
-        new_updates.max_adjustment,
-        higher_tightens=False,
-        effect_noun="how far a reliability may move",
-    )
-    if change is not None:
-        changes.append(change)
+    if old_updates.prior_weight != new_updates.prior_weight:
+        changes.append(
+            PolicyChange(
+                path="reliability_updates.prior_weight",
+                before=_number(old_updates.prior_weight),
+                after=_number(new_updates.prior_weight),
+                direction=UNORDERED,
+                effect=(
+                    "changes how strongly declared reliability resists adjudications; applied "
+                    "reliability can rise or fall depending on whether those adjudications are "
+                    "correct or incorrect"
+                ),
+            )
+        )
+    if old_updates.max_adjustment != new_updates.max_adjustment:
+        changes.append(
+            PolicyChange(
+                path="reliability_updates.max_adjustment",
+                before=_number(old_updates.max_adjustment),
+                after=_number(new_updates.max_adjustment),
+                direction=UNORDERED,
+                effect=(
+                    "changes the largest permitted movement from declared reliability; that "
+                    "movement can be upward or downward depending on adjudication outcomes"
+                ),
+            )
+        )
     return changes
 
 
@@ -438,7 +514,36 @@ class ClaimOutcomeChange:
     before_reason: str
     after_reason: str
 
-    def to_dict(self) -> dict[str, Any]:
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "claim", _text(self.claim, "impact.change.claim"))
+        for name in ("before", "after"):
+            value = getattr(self, name)
+            if type(value) is not str or value not in _OUTCOME_LABELS:
+                choices = ", ".join(sorted(_OUTCOME_LABELS))
+                raise ValidationError(f"impact.change.{name} must be one of: {choices}")
+        if self.before == self.after:
+            raise ValidationError("an impact change must move the claim outcome")
+        object.__setattr__(
+            self,
+            "before_reason",
+            _text(self.before_reason, "impact.change.before_reason"),
+        )
+        object.__setattr__(
+            self,
+            "after_reason",
+            _text(self.after_reason, "impact.change.after_reason"),
+        )
+
+    def _validated_snapshot(self) -> ClaimOutcomeChange:
+        return ClaimOutcomeChange(
+            claim=self.claim,
+            before=self.before,
+            after=self.after,
+            before_reason=self.before_reason,
+            after_reason=self.after_reason,
+        )
+
+    def _to_dict_unchecked(self) -> dict[str, Any]:
         return {
             "claim": self.claim,
             "before": self.before,
@@ -446,6 +551,11 @@ class ClaimOutcomeChange:
             "before_reason": self.before_reason,
             "after_reason": self.after_reason,
         }
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return detached JSON after revalidating the frozen shell."""
+
+        return self._validated_snapshot()._to_dict_unchecked()
 
 
 @dataclass(frozen=True, slots=True)
@@ -458,20 +568,66 @@ class DecisionImpact:
     before_digest: str
     after_digest: str
 
+    def __post_init__(self) -> None:
+        canonical_time = format_timestamp(parse_timestamp(self.evaluated_at, "impact.evaluated_at"))
+        object.__setattr__(self, "evaluated_at", canonical_time)
+        claims_compared = _nonnegative_int(self.claims_compared, "impact.claims_compared")
+        object.__setattr__(self, "claims_compared", claims_compared)
+        if isinstance(self.changes, str | bytes) or not isinstance(self.changes, Sequence):
+            raise ValidationError("impact.changes must be a sequence of ClaimOutcomeChange objects")
+        snapshots: list[ClaimOutcomeChange] = []
+        for index, change in enumerate(islice(iter(self.changes), MAX_ATTRIBUTE_NODES + 1)):
+            if index == MAX_ATTRIBUTE_NODES:
+                raise ValidationError(
+                    f"impact.changes may contain at most {MAX_ATTRIBUTE_NODES} entries"
+                )
+            if not isinstance(change, ClaimOutcomeChange):
+                raise ValidationError(
+                    f"impact.changes[{index}] must be a ClaimOutcomeChange instance"
+                )
+            snapshots.append(change._validated_snapshot())
+        changes = tuple(snapshots)
+        changes = tuple(sorted(changes, key=lambda change: change.claim))
+        if len({change.claim for change in changes}) != len(changes):
+            raise ValidationError("impact.changes contains duplicate claims")
+        if len(changes) > claims_compared:
+            raise ValidationError("impact changes cannot exceed claims_compared")
+        object.__setattr__(self, "changes", changes)
+        for name in ("before_digest", "after_digest"):
+            value = getattr(self, name)
+            if type(value) is not str or _RESULT_DIGEST.fullmatch(value) is None:
+                raise ValidationError(f"impact.{name} must be a lowercase SHA-256 digest")
+        if changes and self.before_digest == self.after_digest:
+            raise ValidationError("changed outcomes must produce different result digests")
+
     @property
     def identical(self) -> bool:
-        return self.before_digest == self.after_digest
+        """Whether every claim kept the same outcome in this evaluation."""
 
-    def to_dict(self) -> dict[str, Any]:
+        return not self.changes
+
+    def _to_dict_unchecked(self) -> dict[str, Any]:
         return {
             "evaluated_at": self.evaluated_at,
             "identical": self.identical,
             "claims_compared": self.claims_compared,
             "changed_count": len(self.changes),
-            "changes": [change.to_dict() for change in self.changes],
+            "changes": [change._to_dict_unchecked() for change in self.changes],
             "before_digest": self.before_digest,
             "after_digest": self.after_digest,
         }
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return detached JSON after revalidating every nested change."""
+
+        snapshot = DecisionImpact(
+            evaluated_at=self.evaluated_at,
+            claims_compared=self.claims_compared,
+            changes=self.changes,
+            before_digest=self.before_digest,
+            after_digest=self.after_digest,
+        )
+        return snapshot._to_dict_unchecked()
 
 
 def decision_impact(

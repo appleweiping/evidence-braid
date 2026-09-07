@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,10 @@ from evidence_braid.comparison import (
     STRUCTURAL,
     TIGHTENS,
     UNORDERED,
+    ClaimOutcomeChange,
+    DecisionImpact,
     PolicyChange,
+    PolicyComparison,
     compare_policies,
     decision_impact,
 )
@@ -214,8 +218,15 @@ def test_reliability_update_parameters_are_compared() -> None:
     changed = deepcopy(raw)
     changed["reliability_updates"] = {"prior_weight": 12, "max_adjustment": 0.5}
     comparison = compare_policies(before, Policy.from_dict(changed))
-    assert _change(comparison, "reliability_updates.prior_weight").direction == TIGHTENS
-    assert _change(comparison, "reliability_updates.max_adjustment").direction == LOOSENS
+    for path in (
+        "reliability_updates.prior_weight",
+        "reliability_updates.max_adjustment",
+    ):
+        change = _change(comparison, path)
+        assert change.direction == UNORDERED
+        assert "depending on" in change.effect
+        reverse = _change(compare_policies(Policy.from_dict(changed), before), path)
+        assert reverse.direction == UNORDERED
 
 
 def test_a_renamed_policy_warns_that_stored_results_will_not_match() -> None:
@@ -267,6 +278,50 @@ def test_a_change_validates_its_own_fields() -> None:
         PolicyChange(path="", before=1, after=2, direction=TIGHTENS, effect="x")
     with pytest.raises(ValidationError, match="effect"):
         PolicyChange(path="a", before=1, after=2, direction=TIGHTENS, effect="")
+
+
+def test_a_change_owns_nested_values_and_returns_detached_json() -> None:
+    before = {"required": ["vision"]}
+    change = PolicyChange(
+        path="claims.incident.required_modalities",
+        before=before,
+        after={"required": ["audio"]},
+        direction=UNORDERED,
+        effect="changes the required evidence",
+    )
+    before["required"].append("audio")
+    first = change.to_dict()
+    first["before"]["required"].append("sensor")
+
+    assert change.to_dict()["before"] == {"required": ["vision"]}
+
+
+def test_comparison_snapshots_and_revalidates_its_change_sequence() -> None:
+    change = PolicyChange("z", None, 1, STRUCTURAL, "adds z")
+    source = [change]
+    comparison = PolicyComparison(source)  # type: ignore[arg-type]
+    source.clear()
+
+    assert comparison.changes == (change,)
+    with pytest.raises(ValidationError, match=r"comparison\.changes\[0\]"):
+        replace(comparison, changes=("not-a-change",))  # type: ignore[arg-type]
+    with pytest.raises(ValidationError, match="must be a sequence"):
+        replace(comparison, changes=3)  # type: ignore[arg-type]
+    with pytest.raises(ValidationError, match="duplicate"):
+        replace(comparison, changes=(change, change))
+
+
+def test_comparison_owns_changes_and_revalidates_nested_tampering() -> None:
+    caller_change = PolicyChange("field", 1, 2, TIGHTENS, "raises a gate")
+    comparison = PolicyComparison((caller_change,))
+    object.__setattr__(caller_change, "direction", "tampered")
+    assert comparison.to_dict()["changes"][0]["direction"] == TIGHTENS
+
+    object.__setattr__(comparison.changes[0], "direction", "tampered")
+    with pytest.raises(ValidationError, match="direction"):
+        comparison.to_dict()
+    with pytest.raises(ValidationError, match="direction"):
+        comparison.counts()
 
 
 # ---------------------------------------------------------------------------
@@ -323,6 +378,79 @@ def test_the_impact_is_serializable_and_records_both_digests() -> None:
     assert payload["changed_count"] == 1
     assert payload["evaluated_at"].endswith("Z")
     assert json.loads(canonical_json(payload)) == payload
+
+
+def test_result_digest_metadata_can_change_without_an_outcome_moving() -> None:
+    before = Policy.from_dict(policy_dict())
+    raw = policy_dict()
+    raw["policy_id"] = "renamed"
+    impact = decision_impact(before, Policy.from_dict(raw), _events(), AS_OF)
+
+    assert impact.changes == ()
+    assert impact.before_digest != impact.after_digest
+    assert impact.identical is True
+
+
+def test_impact_models_revalidate_dataclass_replace() -> None:
+    before, after = _policies(support_threshold=1.0, min_margin=1.0)
+    impact = decision_impact(before, after, _events(), AS_OF)
+    change = impact.changes[0]
+
+    with pytest.raises(ValidationError, match="must move"):
+        replace(change, after=change.before)
+    with pytest.raises(ValidationError, match="claims_compared"):
+        replace(impact, claims_compared=-1)
+    with pytest.raises(ValidationError, match=r"impact\.changes\[0\]"):
+        replace(impact, changes=("not-a-change",))  # type: ignore[arg-type]
+    with pytest.raises(ValidationError, match="must be a sequence"):
+        replace(impact, changes=3)  # type: ignore[arg-type]
+    with pytest.raises(ValidationError, match="duplicate"):
+        replace(impact, changes=(change, change))
+    with pytest.raises(ValidationError, match="cannot exceed"):
+        replace(impact, claims_compared=0)
+    with pytest.raises(ValidationError, match="before_digest"):
+        replace(impact, before_digest="not-a-digest")
+    with pytest.raises(ValidationError, match="different result digests"):
+        replace(impact, after_digest=impact.before_digest)
+
+
+def test_outcome_change_rejects_unknown_outcomes() -> None:
+    with pytest.raises(ValidationError, match="before"):
+        ClaimOutcomeChange("incident", "unknown", "review", "before", "after")
+
+
+def test_impact_direct_construction_sorts_and_snapshots_changes() -> None:
+    one = ClaimOutcomeChange("z", "review", "escalate", "before", "after")
+    two = ClaimOutcomeChange("a", "review", "reject", "before", "after")
+    source = [one, two]
+    impact = DecisionImpact(
+        evaluated_at="2026-08-31T07:00:00-05:00",
+        claims_compared=2,
+        changes=source,  # type: ignore[arg-type]
+        before_digest="sha256:" + "0" * 64,
+        after_digest="sha256:" + "1" * 64,
+    )
+    source.clear()
+
+    assert impact.evaluated_at == "2026-08-31T12:00:00Z"
+    assert [change.claim for change in impact.changes] == ["a", "z"]
+
+
+def test_impact_owns_changes_and_revalidates_nested_tampering() -> None:
+    caller_change = ClaimOutcomeChange("incident", "review", "escalate", "before", "after")
+    impact = DecisionImpact(
+        evaluated_at="2026-08-31T12:00:00Z",
+        claims_compared=1,
+        changes=(caller_change,),
+        before_digest="sha256:" + "0" * 64,
+        after_digest="sha256:" + "1" * 64,
+    )
+    object.__setattr__(caller_change, "after", "unknown")
+    assert impact.to_dict()["changes"][0]["after"] == "escalate"
+
+    object.__setattr__(impact.changes[0], "after", "unknown")
+    with pytest.raises(ValidationError, match="after"):
+        impact.to_dict()
 
 
 # ---------------------------------------------------------------------------

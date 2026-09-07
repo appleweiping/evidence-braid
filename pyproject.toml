@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "evidence-braid"
-version = "0.2.0"
+version = "0.3.0"
 description = "Deterministic, auditable multimodal evidence fusion and escalation decisions"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,6 +29,8 @@ dependencies = []
 dev = [
   "bandit>=1.7",
   "build>=1.2",
+  "check-wheel-contents>=0.6",
+  "hatchling==1.32.0",
   "mypy>=1.15",
   "pytest>=8.0",
   "pytest-cov>=5.0",
@@ -46,6 +48,25 @@ Source = "https://github.com/appleweiping/evidence-braid"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/evidence_braid"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/CITATION.cff",
+  "/CHANGELOG.md",
+  "/CODE_OF_CONDUCT.md",
+  "/CONTRIBUTING.md",
+  "/GOVERNANCE.md",
+  "/LICENSE",
+  "/README.md",
+  "/SECURITY.md",
+  "/docs",
+  "/examples",
+  "/experiments",
+  "/pyproject.toml",
+  "/src",
+  "/tests",
+  "/uv.lock",
+]
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --strict-config"

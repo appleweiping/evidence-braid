@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import random
+from collections.abc import Iterator, Mapping, Sequence
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,8 @@ from typing import Any
 import pytest
 from conftest import event_dict, policy_dict
 
+import evidence_braid.migrations as migration_module
+import evidence_braid.models as model_module
 from evidence_braid.cli import run
 from evidence_braid.engine import evaluate
 from evidence_braid.errors import ValidationError
@@ -16,6 +19,7 @@ from evidence_braid.io import canonical_json, load_json
 from evidence_braid.migrations import (
     CURRENT_POLICY_SCHEMA_VERSION,
     EARLIEST_POLICY_SCHEMA_VERSION,
+    MigrationNote,
     MigrationReport,
     migrate_policy_document,
     policy_schema_version,
@@ -102,6 +106,97 @@ def test_the_upgrade_does_not_modify_its_input() -> None:
     assert raw == before
 
 
+@pytest.mark.parametrize("current", [False, True])
+def test_a_migrated_document_shares_no_nested_state_with_its_input(current: bool) -> None:
+    raw = _current() if current else policy_dict()
+    original = deepcopy(raw)
+    document, _report = migrate_policy_document(raw)
+    migrated = deepcopy(document)
+
+    document["sources"]["camera-a"]["reliability"] = 0.01
+    document["decay"]["default_half_life_seconds"] = 1
+    document["claims"]["incident"]["required_modalities"].append("vision")
+    assert raw == original
+
+    raw["sources"]["camera-a"]["reliability"] = 0.99
+    raw["decay"]["default_half_life_seconds"] = 999
+    assert migrated["sources"] != raw["sources"]
+    assert migrated["decay"] != raw["decay"]
+
+
+def test_migration_rejects_a_reference_cycle_with_a_domain_error() -> None:
+    raw = _current()
+    raw["cycle"] = raw
+
+    with pytest.raises(ValidationError, match="reference cycle"):
+        migrate_policy_document(raw)
+
+
+def test_migration_bounds_a_mapping_that_lies_about_its_length(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class EndlessPolicy(Mapping[str, Any]):
+        def __init__(self) -> None:
+            self.items_requested = 0
+
+        def __getitem__(self, key: str) -> Any:
+            if key == "schema_version":
+                return CURRENT_POLICY_SCHEMA_VERSION
+            return key
+
+        def __iter__(self) -> Iterator[str]:
+            yield "schema_version"
+            index = 0
+            while True:
+                self.items_requested += 1
+                yield f"field-{index}"
+                index += 1
+
+        def __len__(self) -> int:
+            return 1
+
+    raw = EndlessPolicy()
+    monkeypatch.setattr(model_module, "MAX_ATTRIBUTE_NODES", 5)
+
+    with pytest.raises(ValidationError, match="maximum JSON value count"):
+        migrate_policy_document(raw)
+    assert raw.items_requested <= 5
+
+
+def test_migration_rejects_non_json_state_before_policy_parsing() -> None:
+    raw = _current()
+    raw["extra"] = object()
+
+    with pytest.raises(ValidationError, match="only JSON values"):
+        migrate_policy_document(raw)
+
+
+def test_migration_dispatches_from_the_owned_version_snapshot() -> None:
+    class ChangingVersionPolicy(Mapping[str, Any]):
+        def __init__(self) -> None:
+            self.document = _current()
+            self.version_reads = 0
+
+        def __getitem__(self, key: str) -> Any:
+            if key == "schema_version":
+                self.version_reads += 1
+                return 2 if self.version_reads == 1 else 1
+            return self.document[key]
+
+        def __iter__(self) -> Iterator[str]:
+            return iter(self.document)
+
+        def __len__(self) -> int:
+            return len(self.document)
+
+    document, report = migrate_policy_document(ChangingVersionPolicy())
+
+    assert document["schema_version"] == CURRENT_POLICY_SCHEMA_VERSION
+    assert report.from_version == CURRENT_POLICY_SCHEMA_VERSION
+    assert report.migrated is False
+    Policy.from_dict(document)
+
+
 def test_a_current_document_is_returned_unchanged() -> None:
     document, report = migrate_policy_document(_current())
     assert report.migrated is False
@@ -144,6 +239,110 @@ def test_notes_serialize_for_a_report_file() -> None:
     assert payload["migrated"] is True
     assert payload["notes"][0]["path"].endswith("required_modalities")
     assert json.loads(canonical_json(payload)) == payload
+
+
+@pytest.mark.parametrize(
+    ("path", "change", "message"),
+    [
+        (None, "added a field", "migration_note.path must be a non-empty string"),
+        ("   ", "added a field", "migration_note.path must be a non-empty string"),
+        ("policy.claim", "", "migration_note.change must be a non-empty string"),
+        ("policy.claim", "contains\x00control", "not allowed by XML"),
+    ],
+)
+def test_migration_notes_validate_direct_construction(
+    path: object, change: object, message: str
+) -> None:
+    with pytest.raises(ValidationError, match=message):
+        MigrationNote(path=path, change=change)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("from_version", "to_version", "notes", "message"),
+    [
+        (True, 2, (), "from_version must be an integer"),
+        (0, 2, (), "from_version must be a supported"),
+        (1, 3, (), "to_version must be a supported"),
+        (2, 1, (), "to_version must not precede"),
+        (1, 2, None, "notes must be a sequence"),
+        (1, 2, "note", "notes must be a sequence"),
+        (1, 2, ["note"], r"notes\[0\] must be a MigrationNote"),
+        (2, 2, [MigrationNote("policy.claim", "changed")], "must not contain"),
+    ],
+)
+def test_migration_reports_validate_direct_construction(
+    from_version: object,
+    to_version: object,
+    notes: object,
+    message: str,
+) -> None:
+    with pytest.raises(ValidationError, match=message):
+        MigrationReport(  # type: ignore[arg-type]
+            from_version=from_version,
+            to_version=to_version,
+            notes=notes,
+        )
+
+
+def test_a_migration_report_deeply_snapshots_notes() -> None:
+    note = MigrationNote("policy.claim", "added a field")
+    supplied = [note]
+    report = MigrationReport(from_version=1, to_version=2, notes=supplied)  # type: ignore[arg-type]
+
+    supplied.clear()
+    object.__setattr__(note, "path", "policy.tampered")
+
+    assert report.to_dict()["notes"] == [{"path": "policy.claim", "change": "added a field"}]
+
+
+def test_a_migration_report_bounds_a_non_terminating_notes_sequence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class EndlessNotes(Sequence[MigrationNote]):
+        def __init__(self) -> None:
+            self.items_requested = 0
+
+        def __getitem__(self, index: int) -> MigrationNote:
+            self.items_requested += 1
+            return MigrationNote(f"policy.claim-{index}", "added a field")
+
+        def __len__(self) -> int:
+            return 0
+
+    notes = EndlessNotes()
+    monkeypatch.setattr(migration_module, "MAX_MIGRATION_NOTES", 3)
+
+    with pytest.raises(ValidationError, match="may contain at most 3 entries"):
+        MigrationReport(from_version=1, to_version=2, notes=notes)  # type: ignore[arg-type]
+    assert notes.items_requested <= 4
+
+
+def test_migration_note_serialization_revalidates_a_tampered_shell() -> None:
+    note = MigrationNote("policy.claim", "added a field")
+    object.__setattr__(note, "change", "")
+
+    with pytest.raises(ValidationError, match=r"migration_note\.change"):
+        note.to_dict()
+
+
+def test_migration_report_serialization_revalidates_nested_notes() -> None:
+    report = MigrationReport(
+        from_version=1,
+        to_version=2,
+        notes=(MigrationNote("policy.claim", "added a field"),),
+    )
+    object.__setattr__(report.notes[0], "path", "")
+
+    with pytest.raises(ValidationError, match=r"migration_note\.path"):
+        report.to_dict()
+
+
+def test_migration_report_serialization_revalidates_version_fields() -> None:
+    report = MigrationReport(from_version=2, to_version=2)
+    object.__setattr__(report, "from_version", True)
+
+    with pytest.raises(ValidationError, match="from_version must be an integer"):
+        report.to_dict()
 
 
 def test_an_unmigrated_report_is_reported_as_such() -> None:

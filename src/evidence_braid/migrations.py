@@ -23,8 +23,9 @@ with a migration note, not here.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from itertools import islice
 from typing import Any
 
 from .errors import ValidationError
@@ -36,6 +37,11 @@ CURRENT_POLICY_SCHEMA_VERSION = 2
 # The oldest document this build can still upgrade.
 EARLIEST_POLICY_SCHEMA_VERSION = 1
 
+# A report contains one note per field introduced by an upgrade.  This ceiling
+# is deliberately independent of a sequence's reported length: direct Python
+# callers may supply custom or non-terminating ``Sequence`` implementations.
+MAX_MIGRATION_NOTES = 100_000
+
 
 @dataclass(frozen=True, slots=True)
 class MigrationNote:
@@ -44,8 +50,23 @@ class MigrationNote:
     path: str
     change: str
 
-    def to_dict(self) -> dict[str, str]:
+    def __post_init__(self) -> None:
+        # Import locally because models imports this module for schema dispatch.
+        from .models import _text
+
+        object.__setattr__(self, "path", _text(self.path, "migration_note.path"))
+        object.__setattr__(self, "change", _text(self.change, "migration_note.change"))
+
+    def _validated_snapshot(self) -> MigrationNote:
+        return MigrationNote(path=self.path, change=self.change)
+
+    def _to_dict_unchecked(self) -> dict[str, str]:
         return {"path": self.path, "change": self.change}
+
+    def to_dict(self) -> dict[str, str]:
+        """Return a detached note after revalidating the frozen shell."""
+
+        return self._validated_snapshot()._to_dict_unchecked()
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,19 +77,68 @@ class MigrationReport:
     to_version: int
     notes: tuple[MigrationNote, ...] = ()
 
+    def __post_init__(self) -> None:
+        # Import locally because models imports this module for schema dispatch.
+        from .models import _nonnegative_int
+
+        from_version = _nonnegative_int(self.from_version, "migration_report.from_version")
+        to_version = _nonnegative_int(self.to_version, "migration_report.to_version")
+        if not EARLIEST_POLICY_SCHEMA_VERSION <= from_version <= CURRENT_POLICY_SCHEMA_VERSION:
+            raise ValidationError(
+                "migration_report.from_version must be a supported policy schema version"
+            )
+        if not EARLIEST_POLICY_SCHEMA_VERSION <= to_version <= CURRENT_POLICY_SCHEMA_VERSION:
+            raise ValidationError(
+                "migration_report.to_version must be a supported policy schema version"
+            )
+        if to_version < from_version:
+            raise ValidationError("migration_report.to_version must not precede from_version")
+        if isinstance(self.notes, str | bytes) or not isinstance(self.notes, Sequence):
+            raise ValidationError(
+                "migration_report.notes must be a sequence of MigrationNote objects"
+            )
+        snapshots: list[MigrationNote] = []
+        for index, note in enumerate(islice(iter(self.notes), MAX_MIGRATION_NOTES + 1)):
+            if index == MAX_MIGRATION_NOTES:
+                raise ValidationError(
+                    f"migration_report.notes may contain at most {MAX_MIGRATION_NOTES} entries"
+                )
+            if not isinstance(note, MigrationNote):
+                raise ValidationError(
+                    f"migration_report.notes[{index}] must be a MigrationNote instance"
+                )
+            snapshots.append(note._validated_snapshot())
+        if from_version == to_version and snapshots:
+            raise ValidationError("an unmigrated report must not contain migration notes")
+        object.__setattr__(self, "from_version", from_version)
+        object.__setattr__(self, "to_version", to_version)
+        object.__setattr__(self, "notes", tuple(snapshots))
+
     @property
     def migrated(self) -> bool:
         """Whether the document needed any change at all."""
 
         return self.from_version != self.to_version
 
-    def to_dict(self) -> dict[str, Any]:
+    def _validated_snapshot(self) -> MigrationReport:
+        return MigrationReport(
+            from_version=self.from_version,
+            to_version=self.to_version,
+            notes=self.notes,
+        )
+
+    def _to_dict_unchecked(self) -> dict[str, Any]:
         return {
             "from_version": self.from_version,
             "to_version": self.to_version,
             "migrated": self.migrated,
-            "notes": [note.to_dict() for note in self.notes],
+            "notes": [note._to_dict_unchecked() for note in self.notes],
         }
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return detached JSON after revalidating every nested note."""
+
+        return self._validated_snapshot()._to_dict_unchecked()
 
 
 def policy_schema_version(raw: Any) -> int:
@@ -153,8 +223,17 @@ def migrate_policy_document(raw: Any) -> tuple[dict[str, Any], MigrationReport]:
 
     if not isinstance(raw, Mapping):
         raise ValidationError("policy must be a JSON object")
-    from_version = policy_schema_version(raw)
-    document: dict[str, Any] = dict(raw)
+    # Import locally because the model module owns the JSON hardening helpers
+    # and imports this module for schema dispatch.
+    from .models import _freeze_json, _thaw_json
+
+    document = _thaw_json(_freeze_json(raw, "policy", validate_scalars=False))
+    if type(document) is not dict:  # pragma: no cover - the root Mapping guarantees this
+        raise ValidationError("policy must be a JSON object")
+    # Read the dispatch version from the owned snapshot. A custom Mapping can
+    # return different values on consecutive lookups; consulting it once before
+    # and once during the copy could otherwise apply the wrong schema semantics.
+    from_version = policy_schema_version(document)
     notes: list[MigrationNote] = []
     version = from_version
     while version < CURRENT_POLICY_SCHEMA_VERSION:
@@ -172,6 +251,7 @@ def migrate_policy_document(raw: Any) -> tuple[dict[str, Any], MigrationReport]:
 __all__ = [
     "CURRENT_POLICY_SCHEMA_VERSION",
     "EARLIEST_POLICY_SCHEMA_VERSION",
+    "MAX_MIGRATION_NOTES",
     "MigrationNote",
     "MigrationReport",
     "migrate_policy_document",

@@ -110,7 +110,7 @@ Each non-empty line in the input JSONL file is one event:
 | `observed_at` | Time the underlying event was observed. Must include a UTC offset. |
 | `ingested_at` | Time the decision system learned of it; controls when evidence becomes knowable. |
 | `correlation_group` | Optional shared causal identity. Copies in a group count once per signal. |
-| `attributes` | Optional finite JSON object, at most 64 levels deep and with integers up to 640 decimal digits, retained by the immutable event model and excluded from scoring. |
+| `attributes` | Optional finite JSON object, at most 64 levels deep and 1,000,000 values, with integers up to 640 decimal digits, retained by the immutable event model and excluded from scoring. |
 
 Unknown fields, duplicate object keys, and exponents that overflow the finite
 float range are rejected. Identifiers must contain
@@ -342,8 +342,11 @@ instant, so any difference is attributable to the policies alone. The report
 adds the claims whose outcome actually moved, with the reason each side gave,
 and both result digests. The two halves answer different questions and neither
 replaces the other: the field comparison can report several tightened gates
-while the evidence shows nothing moved, which is exactly the case where a
-version is safe to adopt.
+while one supplied evidence set at one `as_of` instant shows nothing moved. That
+observation supports an adoption review; it is not proof that the version is
+safe or suitable. Validate candidate policies across representative domain
+evidence and relevant evaluation instants, following the
+[research and deployment limitations](docs/research-limitations.md).
 
 Both documents are upgraded on load, so a comparison is never confused by a
 field one version simply did not have: a schema 1 policy arrives with the

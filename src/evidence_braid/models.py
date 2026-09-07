@@ -26,6 +26,7 @@ from .migrations import (
 _EnumT = TypeVar("_EnumT", bound=StrEnum)
 
 MAX_ATTRIBUTE_DEPTH = 64
+MAX_ATTRIBUTE_NODES = 1_000_000
 STABLE_FLOAT_DIGITS = 12
 _FALLBACK_INTEGER_DIGIT_THRESHOLD = 640
 MAX_ATTRIBUTE_INTEGER_DIGITS = getattr(
@@ -251,8 +252,17 @@ def _freeze_json(
     *,
     depth: int = 0,
     allow_frozen_sequences: bool = False,
+    validate_scalars: bool = True,
+    _node_budget: list[int] | None = None,
 ) -> Any:
     """Validate and recursively freeze a JSON value supplied through the Python API."""
+    if _node_budget is None:
+        _node_budget = [MAX_ATTRIBUTE_NODES]
+    if _node_budget[0] == 0:
+        raise ValidationError(
+            f"{path} exceeds the maximum JSON value count of {MAX_ATTRIBUTE_NODES}"
+        )
+    _node_budget[0] -= 1
     if depth > MAX_ATTRIBUTE_DEPTH:
         raise ValidationError(
             f"{path} exceeds the maximum attribute nesting depth of {MAX_ATTRIBUTE_DEPTH}"
@@ -260,17 +270,17 @@ def _freeze_json(
     if value is None or type(value) is bool:
         return value
     if type(value) is int:
-        if abs(value) > _MAX_ATTRIBUTE_INTEGER:
+        if validate_scalars and abs(value) > _MAX_ATTRIBUTE_INTEGER:
             raise ValidationError(
                 f"{path} integer must contain at most {MAX_ATTRIBUTE_INTEGER_DIGITS} digits"
             )
         return value
     if type(value) is float:
-        if not isfinite(value):
+        if validate_scalars and not isfinite(value):
             raise ValidationError(f"{path} must contain only finite JSON numbers")
         return value
     if type(value) is str:
-        if not _is_xml_character(value):
+        if validate_scalars and not _is_xml_character(value):
             raise ValidationError(f"{path} contains a character not allowed by XML 1.0")
         return value
     if isinstance(value, Mapping):
@@ -290,6 +300,8 @@ def _freeze_json(
                 next_ancestors,
                 depth=depth + 1,
                 allow_frozen_sequences=allow_frozen_sequences,
+                validate_scalars=validate_scalars,
+                _node_budget=_node_budget,
             )
         return MappingProxyType(frozen)
     if isinstance(value, list) or (allow_frozen_sequences and isinstance(value, tuple)):
@@ -304,6 +316,8 @@ def _freeze_json(
                 next_ancestors,
                 depth=depth + 1,
                 allow_frozen_sequences=allow_frozen_sequences,
+                validate_scalars=validate_scalars,
+                _node_budget=_node_budget,
             )
             for index, item in enumerate(value)
         )

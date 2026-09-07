@@ -5,6 +5,8 @@ Versioning once the first stable release is published.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-07
+
 ### Added
 
 - `evidence-braid diff-policy`, and the `compare_policies` and `decision_impact` functions
@@ -19,8 +21,10 @@ Versioning once the first stable release is published.
 - `--events` with `--as-of` adds the empirical half: both policies are evaluated over the
   identical evidence at the identical instant, and the report lists the claims whose outcome
   actually moved, with the reason each side gave and both result digests. A field comparison
-  can report several tightened gates while the evidence shows nothing moved, which is exactly
-  the case where a new version is safe to adopt; neither half answers the other question.
+  can report several tightened gates while one supplied evidence set at one instant shows
+  nothing moved. That observation supports an adoption review but is not proof of safety or
+  suitability; representative domain evidence and relevant evaluation instants remain necessary.
+  Neither half answers the other question.
 
 - Policy schema version 2, and the migration that brings an older document to it.
   `migrate_policy_document` upgrades one version at a time and returns a `MigrationReport`
@@ -56,6 +60,9 @@ Versioning once the first stable release is published.
 
 ### Changed
 
+- CI and tagged releases now consume the frozen dependency lock with pinned automation actions;
+  publishing requires successful cross-platform tests and CodeQL, uses reproducible archive
+  timestamps, emits checksums and provenance, and refuses to replace an existing release asset.
 - `Policy.from_dict` and `load_policy` accept a schema 1 document and upgrade it on the way in.
   A migration only ever writes down, explicitly, the behaviour the older version already had; it
   never guesses what an operator would have wanted from a capability that did not exist when they

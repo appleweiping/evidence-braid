@@ -29,8 +29,10 @@ checks reduce ambiguity; they are not a substitute for deployment-level byte,
 nesting-depth, or event-count limits.
 CLI domain errors escape terminal control characters and text unsupported by
 the active stderr encoding.
-Event attributes have a defensive 64-level nesting bound, but applications
+Event attributes have defensive 64-level nesting and 1,000,000-value bounds, but applications
 should set substantially smaller domain-appropriate byte and complexity limits.
+Migration-report note sequences are independently capped at 100,000 entries and
+are deeply snapshotted before they cross the public model boundary.
 Integers accepted by public models are limited to CPython's stable 640-digit
 conversion-check threshold (with the same explicit fallback on other runtimes),
 so accepted Python API values cannot later fail solely because an administrator
