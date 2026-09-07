@@ -62,9 +62,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     robustness_parser.add_argument("policy", type=Path, help="policy JSON file")
     robustness_parser.add_argument("events", type=Path, help="evidence JSONL file")
-    robustness_parser.add_argument(
-        "--as-of", required=True, help="timezone-aware ISO-8601 instant"
-    )
+    robustness_parser.add_argument("--as-of", required=True, help="timezone-aware ISO-8601 instant")
     robustness_parser.add_argument(
         "--max-events",
         type=int,
