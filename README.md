@@ -299,6 +299,57 @@ deliberately keep using declared reliabilities.
 Supply the file with `--adjudications` on either command, or pass
 `adjudications=` to `evaluate` or `replay` from Python.
 
+## Comparing two policies
+
+Before adopting a new policy version, the question is not which characters
+changed but which decisions can move, and in which direction:
+
+```bash
+evidence-braid diff-policy policy.json policy-next.json
+```
+
+Every field is classified by what it does to the machinery. Raising a threshold
+tightens the gate it belongs to; lengthening a half-life loosens every gate,
+because evidence keeps more of its weight; adding a source is structural,
+because that source stops being scored at the default reliability. Each change
+carries a sentence saying what it does, not only that it happened:
+
+```json
+{
+  "path": "claims.road_obstruction.required_modalities",
+  "before": [], "after": ["vision"],
+  "direction": "tightens",
+  "effect": "requires vision evidence, so a signal without it no longer passes its independence gate however many other modalities corroborate it"
+}
+```
+
+A change that cannot be ordered says so rather than inventing a direction.
+Turning on `reliability_updates` is the clear case: whether it raises or lowers
+a source depends entirely on the adjudications the caller supplies.
+
+Direction is a statement about one gate, never about the final outcome. A claim
+whose contradiction gate closes does not thereby escalate; it becomes a review.
+And a tightened gate no claim was near moves nothing at all. For that answer,
+supply evidence:
+
+```bash
+evidence-braid diff-policy policy.json policy-next.json \
+  --events events.jsonl --as-of 2026-08-31T12:00:00Z
+```
+
+Both policies are then evaluated over the identical events at the identical
+instant, so any difference is attributable to the policies alone. The report
+adds the claims whose outcome actually moved, with the reason each side gave,
+and both result digests. The two halves answer different questions and neither
+replaces the other: the field comparison can report several tightened gates
+while the evidence shows nothing moved, which is exactly the case where a
+version is safe to adopt.
+
+Both documents are upgraded on load, so a comparison is never confused by a
+field one version simply did not have: a schema 1 policy arrives with the
+defaults its upgrade wrote down explicitly, and the version difference itself is
+reported as structural with the note that it moves no decision on its own.
+
 ## Machine output
 
 The result contains:
@@ -509,7 +560,6 @@ in [`CITATION.cff`](CITATION.cff).
 
 - JSON Schema documents for policy and events.
 - Signed result envelopes through an optional adapter.
-- Policy comparison that explains why two versions differ.
 - Streaming adapter with explicit snapshot boundaries.
 - Additional report accessibility testing.
 

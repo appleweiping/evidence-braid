@@ -45,6 +45,24 @@ conversion-check threshold (with an explicit 640 fallback on other runtimes),
 without converting the candidate to text first. Only exact built-in JSON scalar
 types are accepted for attributes.
 
+### `comparison.py`
+
+Explains how one policy differs from another, and what that difference does.
+
+A textual diff answers which characters changed. This answers which gates moved
+and in which direction, because that is the question asked before adopting a new
+version. Direction is always a statement about one gate rather than about the
+final outcome, and a change whose direction depends on caller-supplied data
+reports itself as unordered instead of guessing.
+
+`decision_impact` supplies the other half by evaluating both policies over the
+same evidence at the same instant. The two are kept separate deliberately: a
+tightened gate that no claim was near moves nothing, and an unordered change can
+move a great deal, so neither answer can be derived from the other.
+
+Both policies reach this module already upgraded, so a comparison never has to
+reason about a field one version lacked.
+
 ### `migrations.py`
 
 Holds the ordered upgrades between policy schema versions, one step per version,

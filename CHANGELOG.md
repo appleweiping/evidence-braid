@@ -7,6 +7,21 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- `evidence-braid diff-policy`, and the `compare_policies` and `decision_impact` functions
+  behind it. The comparison classifies every field by what it does to the machinery rather
+  than reporting that it changed: raising a threshold tightens the gate it belongs to,
+  lengthening a half-life loosens every gate because evidence keeps more of its weight, and
+  adding or removing a source or claim is structural. Each change carries a sentence saying
+  what it does.
+- A change that cannot be ordered reports `unordered` instead of inventing a direction.
+  Turning `reliability_updates` on is the case that matters: whether it raises or lowers a
+  source depends entirely on the adjudications the caller supplies.
+- `--events` with `--as-of` adds the empirical half: both policies are evaluated over the
+  identical evidence at the identical instant, and the report lists the claims whose outcome
+  actually moved, with the reason each side gave and both result digests. A field comparison
+  can report several tightened gates while the evidence shows nothing moved, which is exactly
+  the case where a new version is safe to adopt; neither half answers the other question.
+
 - Policy schema version 2, and the migration that brings an older document to it.
   `migrate_policy_document` upgrades one version at a time and returns a `MigrationReport`
   naming every field it added; `evidence-braid migrate-policy` performs the same upgrade on
