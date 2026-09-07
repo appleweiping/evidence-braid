@@ -24,6 +24,7 @@ from .models import Policy, parse_timestamp
 from .replay import replay
 from .report import render_html, render_svg
 from .robustness import robustness
+from .storage import MAX_LEDGER_BYTES, SQLiteLedger, load_ledger
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -105,6 +106,21 @@ def _parser() -> argparse.ArgumentParser:
     diff_parser.add_argument(
         "--adjudications", type=Path, help="optional adjudicated-outcome JSONL"
     )
+    ledger_parser = subparsers.add_parser(
+        "ledger", help="append, verify, export, or import a durable evidence ledger"
+    )
+    ledger_commands = ledger_parser.add_subparsers(dest="ledger_command", required=True)
+    for command in ("append", "verify", "export", "import"):
+        operation = ledger_commands.add_parser(command)
+        operation.add_argument("database", type=Path, help="local SQLite ledger file")
+        if command in ("append", "import"):
+            operation.add_argument(
+                "source", type=Path, help="event JSONL (append) or ledger JSON (import)"
+            )
+        operation.add_argument("--output", default="-", help="JSON destination, or - for stdout")
+        operation.add_argument(
+            "--expected-head", help="independently retained SHA-256 head to compare"
+        )
     return parser
 
 
@@ -182,9 +198,45 @@ def _diff_policy(args: argparse.Namespace) -> None:
     _emit(args.output, canonical_json(payload))
 
 
+def _ledger(args: argparse.Namespace) -> None:
+    if args.output != "-":
+        output = Path(args.output)
+        if output.resolve() == args.database.resolve() or (
+            output.exists() and args.database.exists() and output.samefile(args.database)
+        ):
+            raise InputFormatError("ledger output must not overwrite its database")
+    if args.ledger_command == "import":
+        imported = load_ledger(args.source, expected_head=args.expected_head)
+        result = SQLiteLedger(args.database).import_snapshot(imported)
+    elif args.ledger_command == "append":
+        events = load_events(args.source)
+        result = SQLiteLedger(args.database).append(events, expected_head=args.expected_head)
+    else:
+        result = SQLiteLedger(args.database, create=False).snapshot(
+            expected_head=args.expected_head
+        )
+    payload = (
+        result.to_dict()
+        if args.ledger_command == "export"
+        else {
+            "schema_version": result.schema_version,
+            "entry_count": len(result.entries),
+            "head_digest": result.head_digest,
+            "verified": True,
+        }
+    )
+    content = canonical_json(payload, pretty=False) + "\n"
+    if len(content.encode("utf-8")) > MAX_LEDGER_BYTES:
+        raise InputFormatError("ledger output exceeds the 64 MiB limit")
+    _emit(args.output, content)
+
+
 def run(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "ledger":
+            _ledger(args)
+            return 0
         if args.command == "migrate-policy":
             _migrate_policy(args)
             return 0

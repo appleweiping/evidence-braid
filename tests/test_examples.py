@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 from evidence_braid.engine import evaluate
@@ -39,3 +41,17 @@ def test_checked_in_replay_is_current() -> None:
         for line in (EXAMPLES / "replay.jsonl").read_text(encoding="utf-8").splitlines()
     ]
     assert actual == expected
+
+
+def test_durable_ledger_example_reopens_and_preserves_evaluation() -> None:
+    result = subprocess.run(
+        [sys.executable, str(EXAMPLES / "durable_ledger.py")],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+    report = json.loads(result.stdout)
+    assert report["entry_count"] == len(load_events(EXAMPLES / "events.jsonl"))
+    assert report["reopened"] is True
+    assert report["evaluation_unchanged"] is True

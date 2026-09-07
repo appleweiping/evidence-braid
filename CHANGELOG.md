@@ -5,7 +5,14 @@ Versioning once the first stable release is published.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Durable SQLite evidence ledgers with atomic batch append, concurrent writers,
+  strict verified snapshot import/export, expected-head checks and CLI commands.
+- Versioned v2 ledger digests bind sequence, predecessor and complete event;
+  strict v1 deserialization preserves previous receipt hashes. Nested receipt
+  payloads are now recursively immutable. See `docs/durable-ledger.md` for the
+  migration, transaction, resource and trust boundaries.
 
 ## [0.5.0] - 2026-09-07
 

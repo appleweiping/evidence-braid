@@ -16,6 +16,7 @@ from .robustness import (
     analyze_robustness,
     robustness,
 )
+from .storage import SQLiteLedger, load_ledger, write_ledger
 
 __all__ = [
     "Adjudication",
@@ -36,6 +37,7 @@ __all__ = [
     "ProvenanceNode",
     "RobustnessImpact",
     "RobustnessReport",
+    "SQLiteLedger",
     "Signal",
     "ValidationError",
     "Verdict",
@@ -44,12 +46,14 @@ __all__ = [
     "build_provenance",
     "classification_metrics",
     "evaluate",
+    "load_ledger",
     "majority_vote",
     "reliability_weighted_vote",
     "render_html",
     "render_svg",
     "replay",
     "robustness",
+    "write_ledger",
 ]
 
 __version__ = "0.5.0"

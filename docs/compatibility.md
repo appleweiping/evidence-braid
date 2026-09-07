@@ -13,6 +13,13 @@ Compatibility surfaces include:
 - CLI commands, documented options, exit code `2` for domain/input failures, and JSON/JSONL formats;
 - replay prefix semantics and the determinism contract;
 - baseline definitions and metric field names.
+- ledger schema 2.0 and strict read compatibility for original schema 1.0 receipts.
+
+New `build_ledger` output uses schema `2.0`, whose digest binds the sequence and
+schema as well as the predecessor and event. Previous v1 heads remain readable
+and verifiable; they are not silently upgraded. The SQLite store accepts v2
+receipts only. See [durable ledger](durable-ledger.md) for explicit migration
+and ordering behavior. Evaluation and replay output digests are unchanged.
 
 Changing a decision comparison, stabilized precision, correlation selection, replay boundary, or
 digest input is behaviorally significant even when Python signatures do not change. Such changes

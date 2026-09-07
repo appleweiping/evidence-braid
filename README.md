@@ -374,6 +374,24 @@ reported as structural with the note that it moves no decision on its own.
 
 ## Machine output
 
+### Durable evidence storage
+
+Append evidence across processes with `SQLiteLedger` or the CLI:
+
+```bash
+evidence-braid ledger append evidence.db examples/events.jsonl
+evidence-braid ledger verify evidence.db
+evidence-braid ledger export evidence.db --output evidence.json
+evidence-braid ledger import restored.db evidence.json
+python examples/durable_ledger.py
+```
+
+Batches commit atomically, writers serialize through SQLite, and each operation
+verifies the complete existing chain. `--expected-head` compares an independently
+retained digest. Versioned snapshots support strict verification and round-trip
+import. Read the [transaction, version and integrity contract](docs/durable-ledger.md)
+for limits, migration and the trust boundary.
+
 ### Provenance graph and integrity ledger
 
 The public API can emit two complementary offline records:
