@@ -5,6 +5,15 @@ Versioning once the first stable release is published.
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [0.5.0] - 2026-09-07
+
+### Added
+
+- Added an offline hash-chained evidence ledger with explicit integrity-only semantics.
+- Added a deterministic provenance graph linking claims, sources, events, signals, and correlation groups.
+
 ## [0.4.0] - 2026-09-07
 
 ### Added

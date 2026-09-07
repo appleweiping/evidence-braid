@@ -374,6 +374,22 @@ reported as structural with the note that it moves no decision on its own.
 
 ## Machine output
 
+### Provenance graph and integrity ledger
+
+The public API can emit two complementary offline records:
+
+```python
+from evidence_braid import build_ledger, build_provenance
+
+provenance = build_provenance(events).to_dict()
+ledger = build_ledger(events)
+assert ledger.verify()
+```
+
+The provenance graph links claims, sources, events, signals, and correlation groups.
+The hash chain detects reordering or edits after production; it does not establish
+that an observation is true, which remains the responsibility of adjudication.
+
 The result contains:
 
 - input and considered counts plus not-yet-ingested event IDs;
