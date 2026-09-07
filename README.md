@@ -37,6 +37,8 @@ standalone operator report is [`examples/decision.html`](examples/decision.html)
 6. Enforces thresholds, margin, quorum, source, and modality requirements.
 7. Emits a deterministic decision trace, stable digest, HTML report, and SVG.
 8. Replays a JSONL stream at every ingestion-time boundary.
+9. Runs a bounded, deterministic leave-one-out robustness analysis that shows
+   which visible events can change a claim outcome.
 
 The package has no runtime dependencies and supports Python 3.11 or newer.
 
@@ -66,6 +68,23 @@ Replay the evidence in ingestion order:
 evidence-braid replay examples/policy.json examples/events.jsonl \
   --output replay.jsonl
 ```
+
+Measure whether any one visible event is decisive:
+
+```bash
+evidence-braid robustness examples/policy.json examples/events.jsonl \
+  --as-of 2026-08-31T12:00:00Z \
+  --output robustness.json
+```
+
+The report removes each ingested event once and evaluates the unchanged policy
+at the same instant. `stability` is the fraction of removals that preserve a
+claim's outcome; `impacts` records every outcome-changing removal, including
+the before/after reasons and margins. This is a sensitivity diagnostic, not a
+statistical confidence interval or a claim that the surviving evidence is
+correct. Because the calculation is quadratic in visible events, the command
+rejects more than 256 by default; raise the bound deliberately with
+`--max-events` when the cost is understood. Pending events are not perturbed.
 
 Upgrade a policy written against an older schema, and see exactly what changed:
 

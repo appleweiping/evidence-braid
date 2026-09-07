@@ -5,6 +5,19 @@ Versioning once the first stable release is published.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-07
+
+### Added
+
+- Deterministic leave-one-out robustness diagnostics through `robustness()` and
+  `evidence-braid robustness`. Each visible event is removed once, the same
+  policy is evaluated at the same instant, and outcome-changing removals are
+  recorded with both decision reasons and margins. The report includes a
+  per-claim stability fraction and a baseline result digest.
+- An explicit `max_events` cost guard (default `256`) prevents an accidental
+  quadratic analysis over an unbounded evidence feed. Pending events are not
+  perturbed, and a linked adjudication is removed together with its event.
+
 ## [0.3.0] - 2026-09-07
 
 ### Added

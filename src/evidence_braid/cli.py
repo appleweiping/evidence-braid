@@ -23,6 +23,7 @@ from .migrations import CURRENT_POLICY_SCHEMA_VERSION, migrate_policy_document
 from .models import Policy, parse_timestamp
 from .replay import replay
 from .report import render_html, render_svg
+from .robustness import robustness
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -53,6 +54,27 @@ def _parser() -> argparse.ArgumentParser:
         "--output", default="-", help="result JSONL destination, or - for stdout"
     )
     replay_parser.add_argument(
+        "--adjudications", type=Path, help="optional adjudicated-outcome JSONL file"
+    )
+
+    robustness_parser = subparsers.add_parser(
+        "robustness", help="measure claim outcome dependence on one visible event"
+    )
+    robustness_parser.add_argument("policy", type=Path, help="policy JSON file")
+    robustness_parser.add_argument("events", type=Path, help="evidence JSONL file")
+    robustness_parser.add_argument(
+        "--as-of", required=True, help="timezone-aware ISO-8601 instant"
+    )
+    robustness_parser.add_argument(
+        "--max-events",
+        type=int,
+        default=256,
+        help="maximum visible events to perturb (default: 256)",
+    )
+    robustness_parser.add_argument(
+        "--output", default="-", help="machine JSON destination, or - for stdout"
+    )
+    robustness_parser.add_argument(
         "--adjudications", type=Path, help="optional adjudicated-outcome JSONL file"
     )
 
@@ -182,6 +204,16 @@ def run(argv: Sequence[str] | None = None) -> int:
                 write_text(args.html, render_html(result))
             if args.svg:
                 write_text(args.svg, render_svg(result))
+        elif args.command == "robustness":
+            as_of = parse_timestamp(args.as_of, "--as-of")
+            report = robustness(
+                policy,
+                events,
+                as_of,
+                adjudications=adjudications,
+                max_events=args.max_events,
+            )
+            _emit(args.output, canonical_json(report.to_dict()))
         else:
             results = replay(policy, events, adjudications=adjudications)
             content = "".join(

@@ -7,11 +7,19 @@ from .metrics import classification_metrics
 from .models import Adjudication, EvidenceEvent, Modality, Outcome, Policy, Signal, Verdict
 from .replay import replay
 from .report import render_html, render_svg
+from .robustness import (
+    ClaimRobustness,
+    RobustnessImpact,
+    RobustnessReport,
+    analyze_robustness,
+    robustness,
+)
 
 __all__ = [
     "Adjudication",
     "BaselineDecision",
     "ClaimDecision",
+    "ClaimRobustness",
     "EvaluationResult",
     "EvidenceBraidError",
     "EvidenceEvent",
@@ -19,9 +27,12 @@ __all__ = [
     "Modality",
     "Outcome",
     "Policy",
+    "RobustnessImpact",
+    "RobustnessReport",
     "Signal",
     "ValidationError",
     "Verdict",
+    "analyze_robustness",
     "classification_metrics",
     "evaluate",
     "majority_vote",
@@ -29,6 +40,7 @@ __all__ = [
     "render_html",
     "render_svg",
     "replay",
+    "robustness",
 ]
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
