@@ -40,3 +40,15 @@ still upgrades is `EARLIEST_POLICY_SCHEMA_VERSION`.
 Supported Python versions are listed in `pyproject.toml` and exercised in CI. Removal is documented
 in a minor release and normally follows the version's upstream security end-of-life. Benchmark
 timings are not a compatibility guarantee.
+
+## Workflow documents
+
+Authority policies, workflow contexts, receipt envelopes and bundles start at
+their own schema version `1.0`, independently of policy/evidence-ledger versions.
+They are closed formats: unknown fields and versions are rejected. Their hashes
+cover complete canonical content; new fields require an explicit versioned
+contract. A workflow freezes one authority-policy digest, evidence-ledger head
+and artifact manifest. Changing them requires a new context, not mutation of
+existing receipts. No workflow migration or compatibility with another
+assurance protocol is claimed. Existing evidence parsing, scoring and receipts
+remain unchanged by this additive feature.

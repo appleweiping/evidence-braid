@@ -7,6 +7,14 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Authority-checked claim workflows with immutable actor/scope/role policies,
+  per-claim revision preconditions, evidence/artifact bindings, independent
+  human review quorum, rejection and independent revocation. Separate workflow
+  receipt envelopes bind the evidence head and authority digest without changing
+  evidence-event schemas or scoring. Includes strict offline bundle replay,
+  atomic file replacement, CLI, conformance fixtures and an executable example.
+  Actor names remain caller-trusted declarations, not authentication; see
+  `docs/authority-workflows.md` for the precise boundaries.
 - Durable SQLite evidence ledgers with atomic batch append, concurrent writers,
   strict verified snapshot import/export, expected-head checks and CLI commands.
 - Versioned v2 ledger digests bind sequence, predecessor and complete event;

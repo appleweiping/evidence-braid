@@ -30,11 +30,11 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 
 | Surface and reference source | Current Evidence Braid evidence | Status and next acceptance work |
 |---|---|---|
-| Immutable typed evidence and strict inputs (`itself/records.py`, `validation.py`) | `models.py`, model/input tests | Partial: multimodal event and adjudication models exist; generalized claim, hypothesis, prediction, test-plan, actor and authority records remain open. |
-| Evidence-backed authorized transitions (`itself/state.py`, bundle conformance fixtures) | Deterministic thresholds, adjudication and replay | Open: explicit lifecycle/authority/scope validator, role separation, cross-record references, transition replay and independent conformance cases. |
+| Immutable typed evidence and strict inputs (`itself/records.py`, `validation.py`) | `models.py`, plus new `authority.py` actor/grant/transition/artifact types | Partial: typed scoped authority and procedural claim records now exist; generalized hypotheses, predictions, test plans and richer epistemic records remain open. |
+| Evidence-backed authorized transitions (`itself/state.py`, bundle conformance fixtures) | New `workflow.py`: exact-scope roles, immutable claim lifecycle, independent review/revocation, per-claim revisions and hand-authored conformance cases | Implemented bounded original procedural slice; richer epistemic states, context migration, lifecycle policy evolution and upstream protocol conformance remain open. |
 | Durable append-only history (`itself/ledger.py`, `ledger_agent/db.py`) | New `storage.py`; transactions, separate-process reopen/append, rollback/crash tests | Implemented bounded local slice; full reference backend behavior including Postgres and remote ingestion remains open. |
-| Strict portable hash receipts (`itself/receipts.py`, `ledger_agent/receipts.py`) | `ledger.py` v1 reader/v2 chain; strict import/export; trusted-head comparison | Partial: event-chain receipt works; task-scoped minimized reasoning receipts and policy/action/authority binding remain open. |
-| Graph/reference provenance (`itself/bundle.py`, `ledger_agent/tool_receipts.py`) | `provenance.py` claim/source/event/group links | Partial: artifact references and execution/tool lineage need content bindings and unresolved-reference checks. |
+| Strict portable hash receipts (`itself/receipts.py`, `ledger_agent/receipts.py`) | `ledger.py` v1 reader/v2 chain plus authority/evidence/manifest-bound workflow envelopes | Partial: strict offline workflow replay and authority/action binding now exist; minimized reasoning disclosures and external attestations remain open. |
+| Graph/reference provenance (`itself/bundle.py`, `ledger_agent/tool_receipts.py`) | `provenance.py` links plus workflow evidence/claim/scope checks and artifact content commitments | Partial: artifact references now have content bindings and unresolved-reference rejection; execution/tool lineage and artifact custody remain open. |
 | Closed artifact bundle publication (`itself/evidence_bundle.py`) | No equivalent yet | Open: manifest inventory, bounded streaming file digests, path confinement, no-replace atomic publication, and independent verification. |
 | Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | Strict Python models and policy migrations | Open: packaged JSON Schemas/catalog/checksums, language-independent fixtures and a second implementation of verification. |
 | External inference/check boundary (`itself/inference.py`) | Events accepted from caller | Open: bounded structured request/response adapters, artifact retention, explicit external check result and authority lifecycle. |
@@ -69,3 +69,24 @@ The current source inventory is 21 Python files / 4,877 lines, with 16 test
 Python files / 4,899 lines. Counts include blank lines and comments and are not
 used to close functional parity rows. The executable durable-store example is
 tested against the existing evaluation result, preserving scoring semantics.
+
+## Authority-workflow increment verification
+
+The next bounded increment adds the original procedural contract documented in
+[authority workflows](authority-workflows.md), not the full epistemic protocol
+surface. Its actor/grant models, claim lifecycle, reference checks, independent
+review quorum and offline receipt replay have **149 focused tests** with 100%
+statement/branch coverage for both new source modules. The complete suite passed
+**676 tests**, with **98.82%** combined coverage and the unchanged 98% gate, on
+Windows/Python 3.14.5. `ResourceWarning` was promoted to an error. Ruff check and
+format, strict Mypy (23 source files), Bandit, wheel/sdist build, strict Twine and
+wheel-content checks all passed locally. A separate process replays exported
+workflow receipts bound to reopened SQLite evidence. Publication and remote CI
+remain distinct steps.
+
+The resulting inventory is 23 source Python files / 5,754 lines and 18 test
+Python files / 5,773 lines, including blanks/comments. These counts are not a
+parity completion criterion. New explicit open boundaries include authenticated
+principals, authority-policy evolution, reopening/migration between workflow
+contexts, transactionally persisted concurrent workflow publication, packaged
+artifact bytes, richer epistemic states and independent non-Python conformance.

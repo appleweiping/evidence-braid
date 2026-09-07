@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from . import __version__
+from .authority import AuthorityPolicy
 from .comparison import compare_policies, decision_impact
 from .engine import evaluate
 from .errors import EvidenceBraidError, InputFormatError
@@ -25,6 +26,7 @@ from .replay import replay
 from .report import render_html, render_svg
 from .robustness import robustness
 from .storage import MAX_LEDGER_BYTES, SQLiteLedger, load_ledger
+from .workflow import load_workflow_bundle, replay_workflow
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -121,6 +123,14 @@ def _parser() -> argparse.ArgumentParser:
         operation.add_argument(
             "--expected-head", help="independently retained SHA-256 head to compare"
         )
+    workflow_parser = subparsers.add_parser(
+        "workflow-replay", help="verify workflow receipts against a separately trusted authority"
+    )
+    workflow_parser.add_argument("authority", type=Path, help="trusted authority-policy JSON")
+    workflow_parser.add_argument("bundle", type=Path, help="workflow bundle JSON")
+    workflow_parser.add_argument("--expected-head", help="independently retained workflow head")
+    workflow_parser.add_argument("--expected-evidence-head", help="retained evidence ledger head")
+    workflow_parser.add_argument("--output", default="-", help="state JSON destination, or -")
     return parser
 
 
@@ -234,6 +244,18 @@ def _ledger(args: argparse.Namespace) -> None:
 def run(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "workflow-replay":
+            authority = AuthorityPolicy.from_dict(load_json(args.authority))
+            bundle = load_workflow_bundle(
+                args.bundle,
+                authority=authority,
+                expected_head=args.expected_head,
+                expected_evidence_head=args.expected_evidence_head,
+            )
+            _emit(
+                args.output, canonical_json(replay_workflow(bundle, authority=authority).to_dict())
+            )
+            return 0
         if args.command == "ledger":
             _ledger(args)
             return 0

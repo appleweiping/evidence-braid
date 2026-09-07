@@ -1,0 +1,58 @@
+{
+  "contract": "Evidence Braid workflow 1.0; independently specified expected lifecycle outcomes",
+  "draft_to_submitted": [
+    {"id": "create", "action": "create", "actor": "alice", "revision": 0, "statement": "The incident has reviewed supporting material."},
+    {"id": "evidence", "action": "bind_evidence", "actor": "alice", "revision": 1, "reference": "evidence"},
+    {"id": "artifact", "action": "bind_artifact", "actor": "bob", "revision": 2, "reference": "artifact"},
+    {"id": "submit", "action": "submit", "actor": "alice", "revision": 3}
+  ],
+  "cases": [
+    {"name": "two_independent_approvals", "prefix": 4, "steps": [
+      {"id": "review1", "action": "approve", "actor": "carol", "revision": 4},
+      {"id": "review2", "action": "approve", "actor": "ellen", "revision": 5}
+    ], "status": "approved", "approvals": ["carol", "ellen"]},
+    {"name": "partial_quorum_is_not_approval", "prefix": 4, "steps": [
+      {"id": "review1", "action": "approve", "actor": "carol", "revision": 4}
+    ], "status": "submitted", "approvals": ["carol"]},
+    {"name": "independent_rejection_after_partial_quorum", "prefix": 4, "steps": [
+      {"id": "review1", "action": "approve", "actor": "carol", "revision": 4},
+      {"id": "review2", "action": "reject", "actor": "ellen", "revision": 5, "reason": "The attached material is insufficient."}
+    ], "status": "rejected", "approvals": ["carol"]},
+    {"name": "separate_revoker", "prefix": 4, "steps": [
+      {"id": "review1", "action": "approve", "actor": "carol", "revision": 4},
+      {"id": "review2", "action": "approve", "actor": "ellen", "revision": 5},
+      {"id": "revoke", "action": "revoke", "actor": "dana", "revision": 6, "reason": "The underlying claim is withdrawn."}
+    ], "status": "revoked", "approvals": ["carol", "ellen"]},
+    {"name": "creator_cannot_approve", "prefix": 4, "steps": [
+      {"id": "review", "action": "approve", "actor": "alice", "revision": 4}
+    ], "error": "independent"},
+    {"name": "artifact_contributor_cannot_approve", "prefix": 4, "steps": [
+      {"id": "review", "action": "approve", "actor": "bob", "revision": 4}
+    ], "error": "independent"},
+    {"name": "automation_cannot_approve", "prefix": 4, "steps": [
+      {"id": "review", "action": "approve", "actor": "robot", "revision": 4}
+    ], "error": "human"},
+    {"name": "stale_revision", "prefix": 4, "steps": [
+      {"id": "review", "action": "approve", "actor": "carol", "revision": 3}
+    ], "error": "expected_revision"},
+    {"name": "undeclared_actor", "prefix": 4, "steps": [
+      {"id": "review", "action": "approve", "actor": "mallory", "revision": 4}
+    ], "error": "scoped role"},
+    {"name": "grant_in_another_scope", "prefix": 4, "steps": [
+      {"id": "review", "action": "approve", "actor": "outsider", "revision": 4}
+    ], "error": "scoped role"},
+    {"name": "submit_without_both_reference_kinds", "prefix": 2, "steps": [
+      {"id": "submit", "action": "submit", "actor": "alice", "revision": 2}
+    ], "error": "requires bound evidence and an artifact"},
+    {"name": "one_actor_cannot_supply_two_votes", "prefix": 4, "steps": [
+      {"id": "review1", "action": "approve", "actor": "carol", "revision": 4},
+      {"id": "review2", "action": "approve", "actor": "carol", "revision": 5}
+    ], "error": "vote only once"},
+    {"name": "submitted_content_is_frozen", "prefix": 4, "steps": [
+      {"id": "extra", "action": "bind_artifact", "actor": "bob", "revision": 4, "reference": "artifact"}
+    ], "error": "only draft"},
+    {"name": "draft_cannot_be_revoked", "prefix": 1, "steps": [
+      {"id": "revoke", "action": "revoke", "actor": "dana", "revision": 1, "reason": "Premature revocation."}
+    ], "error": "only approved"}
+  ]
+}

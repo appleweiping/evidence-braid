@@ -39,8 +39,29 @@ standalone operator report is [`examples/decision.html`](examples/decision.html)
 8. Replays a JSONL stream at every ingestion-time boundary.
 9. Runs a bounded, deterministic leave-one-out robustness analysis that shows
    which visible events can change a claim outcome.
+10. Persists verified evidence receipts and replays separately authorized claim
+    workflows with exact-scope roles, content references and independent review.
 
 The package has no runtime dependencies and supports Python 3.11 or newer.
+
+## Authority-checked workflows
+
+The optional [workflow layer](docs/authority-workflows.md) binds real evidence
+ledger receipts and artifact content commitments to immutable claim histories.
+An independently supplied authority policy controls authoring, submission,
+review quorum, rejection and revocation. Reviewers must be declared humans and
+distinct from every contributing author; scope and revision checks fail closed.
+
+```sh
+python examples/authority_workflow.py
+evidence-braid workflow-replay trusted-authority.json workflow.json
+```
+
+The first command is a self-contained temporary-directory demo; the second uses
+your own trusted policy and exported workflow. Actor names are declarations,
+**not authentication**; approvals are procedural, not proof of claim truth.
+Retain workflow heads independently to detect replacement or rollback. This
+layer does not change existing scoring behavior or encode actions as evidence.
 
 ## Quick start
 

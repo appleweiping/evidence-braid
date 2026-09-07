@@ -36,7 +36,11 @@ def load_ledger(path: str | Path, *, expected_head: str | None = None) -> Eviden
 
 
 def write_ledger(path: str | Path, ledger: EvidenceLedger) -> None:
-    """Verify and atomically replace one portable snapshot under import bounds."""
+    """Verify and write one portable snapshot under import bounds.
+
+    This legacy export writes directly, so interruption may leave a partial
+    destination. It does not share the workflow bundle's atomic publisher.
+    """
     if not isinstance(ledger, EvidenceLedger) or not ledger.verify():
         raise ValidationError("cannot export an invalid ledger")
     content = canonical_json(ledger.to_dict(), pretty=False) + "\n"

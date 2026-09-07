@@ -55,3 +55,20 @@ def test_durable_ledger_example_reopens_and_preserves_evaluation() -> None:
     assert report["entry_count"] == len(load_events(EXAMPLES / "events.jsonl"))
     assert report["reopened"] is True
     assert report["evaluation_unchanged"] is True
+
+
+def test_authority_workflow_example_replays_persisted_receipts() -> None:
+    result = subprocess.run(
+        [sys.executable, str(EXAMPLES / "authority_workflow.py")],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+    report = json.loads(result.stdout)
+    assert report["status"] == "approved"
+    assert report["approval_count"] == 2
+    assert report["record_count"] == 6
+    assert report["offline_replay_equal"] is True
+    assert report["artifact_content_verified"] is True
+    assert report["actor_authentication_provided"] is False
