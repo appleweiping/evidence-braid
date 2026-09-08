@@ -85,7 +85,9 @@ copying a head from the same untrusted input proves only internal consistency.
 
 A filtered page may omit intervening links and is not an independent cryptographic
 inclusion/completeness proof. Its source index verified the complete chain. A
-recipient needing independent verification must retain that chain and anchor.
+recipient can retain that chain and anchor, or use the separate
+[detached membership API](ledger-membership.md) with an independently retained
+Merkle commitment. That API proves selected receipt membership, not query completeness.
 Direct `LedgerPage` construction checks structure/derived byte counts, not query
 membership or trust.
 
@@ -138,7 +140,7 @@ filters: repeatable `--event-id`, `--claim`, `--source`, `--modality`, `--signal
 failure can interrupt response writing.
 
 Persistent secondary indexes, authenticated HTTP/MCP exports, signed cursors,
-external inclusion proofs, retention/compaction, richer query operators and
+query-completeness proofs, retention/compaction, richer query operators and
 reference-comparable persistent workloads remain open.
 
 ## Verification snapshot

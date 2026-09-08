@@ -21,6 +21,13 @@ from .baselines import BaselineDecision, majority_vote, reliability_weighted_vot
 from .engine import ClaimDecision, EvaluationResult, evaluate
 from .errors import EvidenceBraidError, InputFormatError, ValidationError
 from .ledger import EvidenceLedger, LedgerEntry, build_ledger
+from .membership import (
+    LedgerCommitment,
+    LedgerMemberProof,
+    LedgerMembershipBundle,
+    LedgerProofIndex,
+    verify_ledger_membership,
+)
 from .metrics import classification_metrics
 from .models import Adjudication, EvidenceEvent, Modality, Outcome, Policy, Signal, Verdict
 from .provenance import ProvenanceEdge, ProvenanceGraph, ProvenanceNode, build_provenance
@@ -63,9 +70,13 @@ __all__ = [
     "EvidenceEvent",
     "EvidenceLedger",
     "InputFormatError",
+    "LedgerCommitment",
     "LedgerEntry",
     "LedgerIndex",
+    "LedgerMemberProof",
+    "LedgerMembershipBundle",
     "LedgerPage",
+    "LedgerProofIndex",
     "LedgerQuery",
     "LedgerSelection",
     "Modality",
@@ -105,6 +116,7 @@ __all__ = [
     "replay_workflow",
     "robustness",
     "verify_artifact_bundle",
+    "verify_ledger_membership",
     "write_ledger",
     "write_workflow_bundle",
 ]

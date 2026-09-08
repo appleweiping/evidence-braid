@@ -39,6 +39,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 | Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | Strict Python models and policy migrations | Open: packaged JSON Schemas/catalog/checksums, language-independent fixtures and a second implementation of verification. |
 | External inference/check boundary (`itself/inference.py`) | Events accepted from caller | Open: bounded structured request/response adapters, artifact retention, explicit external check result and authority lifecycle. |
 | Persistent query and pagination (`ledger_agent/server/api.py`, `test_export_pagination.py`) | `query.py` head-anchored indexes, exact field/time filters, reusable bounded pages and old-prefix reopening from SQLite snapshots | Partial original local retrieval: persistent secondary indexes, authenticated exports, richer expressions/proofs and reference workload comparisons remain open. |
+| Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: domain-separated canonical receipt leaves, unpadded count-derived Merkle paths, immutable bundles and mandatory separately retained commitment digest | Partial original proof profile: selected membership only. Signed/witnessed heads, append-consistency, nonmembership/query-completeness proofs and independent non-Python verification remain open. |
 | HTTP/SDK/MCP service (`ledger_agent/server/`, `mcp_server.py`, `client.py`) | Local Python API and CLI | Open: service protocol, authentication/tenant boundaries, request limits, idempotency, health and contract tests. |
 | Attestation and independent witness (`ledger_agent/witness.py`, `continuous-attestation.md`) | Optional caller-retained head comparison | Open: signed/witnessed checkpoints, key lifecycle and externally tested replacement/rollback threat model. |
 | Governance/receipts/OSCAL projections (`ledger_agent/context_release.py`, `oscal.py`, `composition.py`) | Existing policy/report mechanics | Open: recorded authority/action/result provenance, policy-bound disclosure, schema-validated projection and compound action receipts. |
@@ -122,3 +123,32 @@ separately from the 512 MiB unique-object storage ceiling. Filesystems without
 hard-link support intentionally fail closed; no cross-filesystem fallback is
 claimed. These are local results, not remote CI or a hard process-memory/runtime
 sandbox. The remaining whole-repository rows stay open.
+
+## Detached-membership increment verification
+
+The original [membership profile](ledger-membership.md) adds independently anchored selected
+receipt proofs over a verified immutable ledger prefix. It binds canonical receipt bytes,
+sequence, count, original ledger version, genesis and prefix head using domain-separated hashes
+and unpadded Merkle trees. The verifier requires a separately retained commitment digest; an
+ordinary chain head is deliberately not interchangeable. Query pages are checked against their
+actual indexed receipts before proof construction, without claiming query completeness.
+
+The **103 new cases** include independently implemented tree/path oracles, a hardcoded digest
+vector, direct page forgery, changed/reordered proof data, canonical JSON and bounded graph
+admission, a separate-process verifier and real historical-prefix reopening after SQLite append.
+Post-review tests cover O(depth) traversal state for wide nested input and the same graph budget
+on export and import. A separate frontier-stack implementation agreed in 94 read-only root,
+header and detached-proof checks.
+
+The final local suite passed **947 tests**, with no skips, on Windows/Python **3.14.5** and
+**3.12.0**, promoting resource warnings to errors. Overall combined coverage was **99.01%**
+on 3.14, with **98.80%** in the membership module and the existing 98% gate unchanged. Ruff
+lint/format, strict Mypy (27 source modules), Bandit, lock consistency, wheel/sdist build,
+strict Twine, wheel-content checks and an isolated installed-wheel proof roundtrip passed.
+No dependency, version or existing CLI/storage behavior changed. Publication and remote CI
+are separate steps.
+
+This closes the specific detached selected-membership gap, not signatures, authenticated
+identity, durable-commit attestation, witnessed checkpoints, key lifecycle, append-consistency,
+nonmembership/query-completeness proofs, cross-language canonical verification or a proof
+service. Those whole-repository comparison rows remain open.

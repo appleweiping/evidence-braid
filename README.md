@@ -84,6 +84,13 @@ historical prefix and rejects cursors for another head or query. Run
 `python examples/ledger_query.py` for a real SQLite append/reopen demonstration.
 This is local retrieval, not a remote authenticated query service.
 
+For detached verification of selected receipts, use `LedgerProofIndex` and
+`verify_ledger_membership` with a separately retained Merkle commitment digest.
+The [membership proof contract](docs/ledger-membership.md) specifies domain-separated
+hashes, exact receipt/position binding, canonical interchange and resource limits.
+Run `python examples/ledger_membership.py` offline. Membership does not prove query
+completeness, authenticated identity, durable commit or append-only consistency.
+
 Clone the repository, create a virtual environment, and install the package:
 
 ```bash
