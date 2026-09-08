@@ -18,6 +18,21 @@ from .authority import (
     WorkflowTransition,
 )
 from .baselines import BaselineDecision, majority_vote, reliability_weighted_vote
+from .check_workflow import CheckedClaim, CheckPolicy, parse_check_policy, verify_claim_checks
+from .checks import (
+    CHECK_ENGINE_VERSION,
+    CheckEvaluation,
+    CheckLimitError,
+    CheckLimits,
+    CheckOperator,
+    CheckOutcome,
+    CheckPlan,
+    CheckReason,
+    CheckResult,
+    CheckRule,
+    evaluate_checks,
+    parse_check_plan,
+)
 from .consistency import (
     LedgerConsistencyProof,
     prove_ledger_consistency,
@@ -76,6 +91,7 @@ from .workflow import (
 )
 
 __all__ = [
+    "CHECK_ENGINE_VERSION",
     "SCHEMA_PUBLICATION_LINE",
     "ActorKind",
     "Adjudication",
@@ -84,6 +100,17 @@ __all__ = [
     "AuthorityPolicy",
     "AuthorityRole",
     "BaselineDecision",
+    "CheckEvaluation",
+    "CheckLimitError",
+    "CheckLimits",
+    "CheckOperator",
+    "CheckOutcome",
+    "CheckPlan",
+    "CheckPolicy",
+    "CheckReason",
+    "CheckResult",
+    "CheckRule",
+    "CheckedClaim",
     "ClaimDecision",
     "ClaimRobustness",
     "ClaimStatus",
@@ -135,12 +162,15 @@ __all__ = [
     "build_workflow",
     "classification_metrics",
     "evaluate",
+    "evaluate_checks",
     "export_schema_directory",
     "export_schemas",
     "load_ledger",
     "load_schema_catalog",
     "load_workflow_bundle",
     "majority_vote",
+    "parse_check_plan",
+    "parse_check_policy",
     "prove_ledger_consistency",
     "reliability_weighted_vote",
     "render_html",
@@ -151,6 +181,7 @@ __all__ = [
     "schema_bytes",
     "schema_registry",
     "verify_artifact_bundle",
+    "verify_claim_checks",
     "verify_ledger_consistency",
     "verify_ledger_membership",
     "verify_schema_archive",

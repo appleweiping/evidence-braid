@@ -44,6 +44,12 @@ standalone operator report is [`examples/decision.html`](examples/decision.html)
 
 The package has no runtime dependencies and supports Python 3.11 or newer.
 
+The optional [retained-artifact check gate](docs/claim-checks.md) evaluates five fixed
+predicates against actual committed bytes and separately requires replayed approval.
+It never trusts a producer's `passed` flag or a serialized `accepted` result. Run
+`python examples/offline_claim_checks.py new-check-demo` for an executable offline
+plan, retained inputs, review workflow and closed artifact bundle.
+
 The fixed offline schema catalog can also be [published as an atomic directory](docs/schema-directory.md)
 on supported Windows/Linux filesystems, with no-replace semantics, bounded complete verification
 and explicit ownership/acknowledgement failures. Its existing ZIP format is unchanged.

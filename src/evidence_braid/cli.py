@@ -3,17 +3,24 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import stat
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from . import __version__
 from .artifacts import build_artifact_bundle, verify_artifact_bundle
-from .authority import AuthorityPolicy
+from .authority import AuthorityPolicy, _identifier
+from .check_workflow import parse_check_policy, verify_claim_checks
+from .checks import CheckLimits, CheckOutcome, evaluate_checks, parse_check_plan
 from .comparison import compare_policies, decision_impact
 from .engine import evaluate
 from .errors import EvidenceBraidError, InputFormatError
 from .io import (
+    _loads,
+    _read_bounded,
     canonical_json,
     load_adjudications,
     load_events,
@@ -21,6 +28,8 @@ from .io import (
     load_policy,
     write_text,
 )
+from .ledger import _hash
+from .limits import DEFAULT_MAX_POLICY_BYTES
 from .migrations import CURRENT_POLICY_SCHEMA_VERSION, migrate_policy_document
 from .models import Modality, Policy, Signal, parse_timestamp
 from .query import LedgerIndex, LedgerQuery
@@ -35,7 +44,7 @@ from .schema_catalog import (
 )
 from .schema_directory import export_schema_directory, verify_schema_directory
 from .storage import MAX_LEDGER_BYTES, SQLiteLedger, load_ledger
-from .workflow import load_workflow_bundle, replay_workflow
+from .workflow import MAX_WORKFLOW_BYTES, WorkflowBundle, load_workflow_bundle, replay_workflow
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -45,6 +54,24 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    checks_parser = subparsers.add_parser(
+        "checks", help="fixed predicates over retained artifact bytes"
+    )
+    checks_commands = checks_parser.add_subparsers(dest="checks_command", required=True)
+    checks_evaluate = checks_commands.add_parser("evaluate", help="recompute a pinned check plan")
+    checks_evaluate.add_argument("plan", type=Path)
+    checks_evaluate.add_argument("--expected-plan-digest", required=True)
+    checks_gate = checks_commands.add_parser(
+        "gate", help="combine replayed approval with recomputed checks"
+    )
+    checks_gate.add_argument("authority", type=Path)
+    checks_gate.add_argument("workflow", type=Path)
+    checks_gate.add_argument("check_policy", type=Path)
+    checks_gate.add_argument("--expected-head", required=True)
+    checks_gate.add_argument("--expected-evidence-head", required=True)
+    for operation in (checks_evaluate, checks_gate):
+        operation.add_argument("--artifact", action="append", default=[], metavar="ID=FILE")
 
     schema_parser = subparsers.add_parser(
         "schema", help="inspect/export fixed offline wire schemas"
@@ -376,9 +403,99 @@ def _artifact_bundle(args: argparse.Namespace) -> None:
     _emit("-", canonical_json(result.to_dict()))
 
 
+def _check_file(source: Path, maximum: int) -> bytes:
+    # These are primary local-file checks, not a hostile-filesystem sandbox.
+    # Ancestors and filesystem state during the read remain caller controlled.
+    path = source.absolute()
+    if "://" in str(source) or str(path).replace("\\", "/").startswith("//"):
+        raise InputFormatError("checks accept local file paths, not protocol or UNC locators")
+    try:
+        observed = path.lstat()
+        if (
+            not stat.S_ISREG(observed.st_mode)
+            or getattr(observed, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT
+        ):
+            raise InputFormatError("check input must be an observed regular file")
+    except OSError:
+        raise InputFormatError("cannot inspect check input file") from None
+    return _read_bounded(path, maximum, "check input")
+
+
+def _check_contents(mappings: list[str], limits: CheckLimits, *, extra: int) -> dict[str, bytes]:
+    if len(mappings) > limits.max_inputs + extra:
+        raise InputFormatError("too many retained artifact mappings")
+    sources: dict[str, Path] = {}
+    for mapping in mappings:
+        identifier, separator, filename = mapping.partition("=")
+        if not separator or not identifier or not filename or identifier in sources:
+            raise InputFormatError("checks require unique nonempty ID=FILE mappings")
+        _identifier(identifier, "retained artifact ID")
+        sources[identifier] = Path(filename).absolute()
+    retained: dict[str, bytes] = {}
+    remaining = limits.max_total_input_bytes
+    for identifier, path in sources.items():
+        raw = _check_file(path, min(limits.max_input_bytes, remaining))
+        retained[identifier] = raw
+        remaining -= len(raw)
+    return retained
+
+
+def _check_json_file(source: Path, maximum: int) -> Any:
+    raw = _check_file(source, maximum)
+    try:
+        return _loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeError, RecursionError):
+        raise InputFormatError("invalid workflow or authority JSON for checks") from None
+
+
+def _checks(args: argparse.Namespace) -> int:
+    limits = CheckLimits()
+    if args.checks_command == "evaluate":
+        _hash(args.expected_plan_digest, "expected_plan_digest")
+        raw = _check_file(args.plan, limits.max_plan_bytes)
+        if hashlib.sha256(raw).hexdigest() != args.expected_plan_digest:
+            raise InputFormatError("check plan does not match its external digest")
+        plan = parse_check_plan(raw, limits=limits)
+        evaluation = evaluate_checks(
+            plan, _check_contents(args.artifact, limits, extra=0), limits=limits
+        )
+        _emit("-", evaluation.to_bytes().decode("utf-8"))
+        return 0 if evaluation.outcome is CheckOutcome.PASS else 1
+    policy = parse_check_policy(_check_file(args.check_policy, 4096), limits=limits)
+    authority = AuthorityPolicy.from_dict(
+        _check_json_file(args.authority, DEFAULT_MAX_POLICY_BYTES)
+    )
+    bundle = WorkflowBundle.from_dict(
+        _check_json_file(args.workflow, MAX_WORKFLOW_BYTES),
+        authority=authority,
+        expected_head=args.expected_head,
+        expected_evidence_head=args.expected_evidence_head,
+    )
+    checked = verify_claim_checks(
+        bundle,
+        authority=authority,
+        policy=policy,
+        contents=_check_contents(args.artifact, limits, extra=2),
+        expected_head=args.expected_head,
+        expected_evidence_head=args.expected_evidence_head,
+        limits=limits,
+    )
+    _emit("-", checked.to_bytes().decode("utf-8"))
+    return 0 if checked.accepted else 1
+
+
 def run(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "checks":
+            try:
+                return _checks(args)
+            except EvidenceBraidError:
+                # Existing workflow loaders can retain raw JSON details in an
+                # exception; this new boundary never echoes those payloads.
+                raise InputFormatError(
+                    "checks rejected invalid input, binding, or resource limit"
+                ) from None
         if args.command == "schema":
             if args.schema_command == "catalog":
                 _emit("-", canonical_json(load_schema_catalog().to_dict()))

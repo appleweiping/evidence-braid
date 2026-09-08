@@ -7,6 +7,12 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Fixed, bounded retained-artifact check plans with typed paths and scalar/byte
+  predicates, immutable ordered results and canonical context commitments. A
+  separate externally pinned workflow gate replays approvals and recomputes the
+  entire retained report without changing legacy procedural approval semantics.
+  Includes an offline executable example, CLI and adversarial binding/oracle tests.
+
 - Atomic no-replace directory publication of the unchanged offline schema catalog,
   strict bounded directory verification, explicit staging ownership/cleanup and
   publication acknowledgement, Windows/Linux native backends and offline CLI/example.

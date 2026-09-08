@@ -37,7 +37,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 | Graph/reference provenance (`itself/bundle.py`, `ledger_agent/tool_receipts.py`) | `provenance.py` links plus workflow evidence/claim/scope checks and artifact content commitments | Partial: artifact references now have content bindings and unresolved-reference rejection; execution/tool lineage and artifact custody remain open. |
 | Closed artifact bundle publication (`itself/evidence_bundle.py`) | `artifacts.py`: closed canonical content-addressed ZIP32, streamed object digests, exact inventory, no-replace atomic publication and externally anchored replay | Implemented bounded original local profile; not upstream directory/wire equivalence. Authenticated custody, signatures and external artifact-store integrations remain open. |
 | Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | `schema_catalog.py` / `schema_directory.py`: seven original structural wire profiles, shared defs, closed pinned catalog/SHA inventory, packaged resources, atomic no-replace ZIP and Windows/Linux directories; independent Draft 2020-12 tests plus existing Node append verifier | Partial original profile: broader epistemic records, upstream wire conformance, multi-line loading and independent cross-language receipt/member verification remain open. |
-| External inference/check boundary (`itself/inference.py`) | Events accepted from caller | Open: bounded structured request/response adapters, artifact retention, explicit external check result and authority lifecycle. |
+| External inference/check boundary (`itself/inference.py`, `records.py`, `bundle.py`; `ledger_agent/campaigns.py`) | `checks.py` fixed retained-byte predicates and `check_workflow.py` separately pinned recomputation/approval gate | Partial original deterministic slice: explicit ordered plans/results, actual retained bytes and authority lifecycle binding; live oracle adapters, arbitrary programs, inference request/response and richer epistemic protocols remain open. |
 | Persistent query and pagination (`ledger_agent/server/api.py`, `test_export_pagination.py`) | `query.py` head-anchored indexes, exact field/time filters, reusable bounded pages and old-prefix reopening from SQLite snapshots | Partial original local retrieval: persistent secondary indexes, authenticated exports, richer expressions/proofs and reference workload comparisons remain open. |
 | Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: selected receipt membership; `consistency.py`: compact two-anchor prefix proofs; `verification/ledger-consistency.mjs`: independent Node bit/index verification of the closed append-proof profile | Partial original proof profile: signed/witnessed heads, hidden new chain-link verification, nonmembership/query-completeness proofs, cross-language receipt/selected-membership verification and broader conformance remain open. |
 | HTTP/SDK/MCP service (`ledger_agent/server/`, `mcp_server.py`, `client.py`) | Local Python API and CLI | Open: service protocol, authentication/tenant boundaries, request limits, idempotency, health and contract tests. |
@@ -298,3 +298,69 @@ isolated Windows wheel, installed without an index or dependencies, executed the
 publish/relocate/new-process verifier example. No runtime dependency, package version, catalog
 pin, resource bytes, existing ZIP API or CI policy changed. These are local results, not a claim
 of remotely published or merged code; full reference-repository parity remains open.
+
+## Deterministic retained-claim check increment
+
+The [new retained-byte contract](claim-checks.md) closes a genuine semantic gap:
+old workflow APPROVED was only independent procedural review, and a hash-correct
+artifact containing `{"ok":false}` could correctly accompany that status.
+The separate check gate now recomputes five fixed predicates from immutable
+retained bytes and refuses semantic acceptance of FAIL/UNKNOWN. It preserves
+old review rules instead of silently redefining approval as truth.
+
+The frozen Itself [`records.py`](https://github.com/Greater-Expanse/itself/blob/b6057fe96fdecdec34ec28afdffc0628549e8831/src/itself/records.py)
+contains Oracle and test/evidence/verdict records;
+[`bundle.py`](https://github.com/Greater-Expanse/itself/blob/b6057fe96fdecdec34ec28afdffc0628549e8831/src/itself/bundle.py)
+checks verdict/evidence/scope/order and replay bindings. Its
+[`inference_to_evidence` example](https://github.com/Greater-Expanse/itself/blob/b6057fe96fdecdec34ec28afdffc0628549e8831/examples/inference_to_evidence/run.py)
+actually performs an external controlled check rather than trusting inference.
+The frozen Perseus [`campaigns.py`](https://github.com/Perseus-Computing-LLC/ledger/blob/c51af79a70bf8863541e4232d0f2bbaea5897821/ledger_agent/campaigns.py)
+separates receipt structure from target verification and recomputes campaign
+counts/status. These primary contracts motivated the acceptance boundary, not
+copied implementation or upstream wire equivalence.
+
+Evidence Braid's original engine has no arbitrary callback/eval/regex/network
+executor. External plan/authority/context and two final heads are pinned; the
+plan excludes final workflow/result hashes to avoid circular commitments.
+All retained inputs, report and metadata are compared against one bounded byte
+snapshot; a coherently rehashed/reapproved fabricated PASS still fails exact
+recomputation. No new schema-catalog entry, old wire byte, package version or
+runtime dependency changes. Fixed profile/resource limits and unresolved live
+oracle, authentication, richer protocol and service gaps are explicit.
+
+Final-source Windows/Python **3.14.5** verification passed **1,460 tests**, with
+the **3 existing Windows symlink-privilege skips**, in **186.11 seconds**. Combined
+statement/branch coverage was **99.16%**, exceeding the unchanged **98%** gate.
+ResourceWarning and RuntimeWarning were errors; Node interoperability was required.
+The gate module covered all 134 statements and 44 branches; the predicate module
+covered 380/381 statements and 177/178 branches (**99.64%** combined). The one
+uncovered predicate path is the defensive second count check during concurrent
+plain-dict admission, not an untested semantic outcome. Reports are
+`build/checks-full.xml`, `build/checks-full-coverage.xml` and `build/checks-full.coverage`.
+
+The **288 new focused cases** passed on Windows/Python **3.14.5** in **10.72 seconds**
+and in a separate scoped Windows/Python **3.12.13** venv in **8.37 seconds**, both
+with runtime/resource warnings treated as errors. Expectations include an
+independent 81-pair tagged scalar truth table, integer/path/binary boundaries,
+shared resource exhaustion, coherently rehashed forged reports, cross-claim/scope,
+unbound references, stale heads, revocation, metadata cycles and output privacy.
+The initial five predicate tests and three gate tests first failed because the
+respective public functionality did not exist, then passed after implementation.
+Two intermediate context tests initially expected a later error despite changing
+the external policy too; their fixtures were corrected to hold external context
+fixed and exercise the intended inner binding check. No production bound weakened.
+
+Ruff lint/format (**98 Python files**), strict Mypy (**33 source modules**), Bandit,
+frozen-lock validation, sdist-to-wheel build, strict Twine and wheel-content
+checks passed. Bandit's public enum `PASS = "pass"` false positive has one
+explicitly justified line-level B105 suppression, not a global exclusion.
+An isolated dependency-free wheel installation executed the full offline example
+with `-I`, creating and verifying actual retained files/workflow/closed ZIP.
+Runtime modules in the wheel and core/docs/example/tests in the sdist were
+compared byte-for-byte with their source. The Python 3.12 test venv used offline
+cached pytest and the local wheel; no system environment or other project changed.
+
+These are local Windows full-suite and cross-version focused results, not a Linux
+full-suite or hosted-CI claim. Runtime dependencies, package version, existing
+schemas/goldens and CI policies remain unchanged. Whole-reference-repository parity
+is still open.
