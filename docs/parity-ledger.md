@@ -39,7 +39,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 | Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | Strict Python models and policy migrations | Open: packaged JSON Schemas/catalog/checksums, language-independent fixtures and a second implementation of verification. |
 | External inference/check boundary (`itself/inference.py`) | Events accepted from caller | Open: bounded structured request/response adapters, artifact retention, explicit external check result and authority lifecycle. |
 | Persistent query and pagination (`ledger_agent/server/api.py`, `test_export_pagination.py`) | `query.py` head-anchored indexes, exact field/time filters, reusable bounded pages and old-prefix reopening from SQLite snapshots | Partial original local retrieval: persistent secondary indexes, authenticated exports, richer expressions/proofs and reference workload comparisons remain open. |
-| Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: domain-separated canonical receipt leaves, unpadded count-derived Merkle paths, immutable bundles and mandatory separately retained commitment digest | Partial original proof profile: selected membership only. Signed/witnessed heads, append-consistency, nonmembership/query-completeness proofs and independent non-Python verification remain open. |
+| Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: canonical receipt leaves, count-derived Merkle paths and an external commitment; `consistency.py`: compact prefix proofs with two externally retained complete commitments | Partial original proof profile: selected membership and two-snapshot receipt-tree consistency. Signed/witnessed heads, hidden new chain-link verification, nonmembership/query-completeness proofs and independent non-Python verification remain open. |
 | HTTP/SDK/MCP service (`ledger_agent/server/`, `mcp_server.py`, `client.py`) | Local Python API and CLI | Open: service protocol, authentication/tenant boundaries, request limits, idempotency, health and contract tests. |
 | Attestation and independent witness (`ledger_agent/witness.py`, `continuous-attestation.md`) | Optional caller-retained head comparison | Open: signed/witnessed checkpoints, key lifecycle and externally tested replacement/rollback threat model. |
 | Governance/receipts/OSCAL projections (`ledger_agent/context_release.py`, `oscal.py`, `composition.py`) | Existing policy/report mechanics | Open: recorded authority/action/result provenance, policy-bound disclosure, schema-validated projection and compound action receipts. |
@@ -152,3 +152,35 @@ This closes the specific detached selected-membership gap, not signatures, authe
 identity, durable-commit attestation, witnessed checkpoints, key lifecycle, append-consistency,
 nonmembership/query-completeness proofs, cross-language canonical verification or a proof
 service. Those whole-repository comparison rows remain open.
+
+## Append-consistency increment verification
+
+The original [append-consistency profile](ledger-consistency.md) closes the selected
+two-snapshot receipt-tree prefix gap. It reuses the existing membership domains and cached
+unpadded tree without changing that wire format. Verification requires **two separately
+retained complete-commitment digests**, never two ordinary chain heads or anchors supplied
+only by the received proof. The builder checks the actual historical prefix head and root;
+the detached verifier reconstructs both committed roots from a compact ordered path.
+
+The **81 new cases** include independently encoded leaves, frontier roots and a distinct
+bit/index verifier across every old prefix at 18 selected sizes, fixed vectors, 1,024 single-bit
+proof mutations, real SQLite append/reopen and verification in a separate process. Admission
+tests cover exact closed shapes before header materialization, byte/depth limits before JSON
+parsing, canonical encoding, huge integers, cycles and maximum-sized path envelopes. The real
+three-to-seven example and isolated installed-wheel roundtrip use a **1,238-byte** proof.
+
+The full local suite passed **1,028 tests**, without skips, on Windows/Python **3.14.5** and
+**3.12.0**, with resource warnings promoted to errors. Overall combined coverage was
+**98.98%** on 3.14, with **98.55%** in the new module and the unchanged 98% gate. Ruff
+lint/format, strict Mypy (28 source modules), Bandit, lock consistency, wheel/sdist build,
+strict Twine metadata, wheel-content checks and the isolated installed-wheel roundtrip
+passed. No dependency, version or existing CLI/storage behavior changed. Publication and
+remote CI remain separate steps.
+
+The proof establishes append consistency of the two anchored receipt trees, not authenticated
+identity, durable publication, witnessed non-equivocation, a signature/key lifecycle, or
+independent revalidation of every undisclosed new hash-chain link. Empty-prefix consistency
+is deliberately vacuous; an equal-size proof requires identical complete headers. Query
+completeness, nonmembership, cross-language canonical verification and service operation
+remain open. This is an incremental capability, not whole-reference-repository parity or
+an externally audited cryptographic protocol.

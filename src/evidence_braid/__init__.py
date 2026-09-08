@@ -18,6 +18,11 @@ from .authority import (
     WorkflowTransition,
 )
 from .baselines import BaselineDecision, majority_vote, reliability_weighted_vote
+from .consistency import (
+    LedgerConsistencyProof,
+    prove_ledger_consistency,
+    verify_ledger_consistency,
+)
 from .engine import ClaimDecision, EvaluationResult, evaluate
 from .errors import EvidenceBraidError, InputFormatError, ValidationError
 from .ledger import EvidenceLedger, LedgerEntry, build_ledger
@@ -71,6 +76,7 @@ __all__ = [
     "EvidenceLedger",
     "InputFormatError",
     "LedgerCommitment",
+    "LedgerConsistencyProof",
     "LedgerEntry",
     "LedgerIndex",
     "LedgerMemberProof",
@@ -109,6 +115,7 @@ __all__ = [
     "load_ledger",
     "load_workflow_bundle",
     "majority_vote",
+    "prove_ledger_consistency",
     "reliability_weighted_vote",
     "render_html",
     "render_svg",
@@ -116,6 +123,7 @@ __all__ = [
     "replay_workflow",
     "robustness",
     "verify_artifact_bundle",
+    "verify_ledger_consistency",
     "verify_ledger_membership",
     "write_ledger",
     "write_workflow_bundle",

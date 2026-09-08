@@ -91,6 +91,12 @@ hashes, exact receipt/position binding, canonical interchange and resource limit
 Run `python examples/ledger_membership.py` offline. Membership does not prove query
 completeness, authenticated identity, durable commit or append-only consistency.
 
+To compare two retained snapshots without revealing their complete ledgers, use
+`prove_ledger_consistency` and `verify_ledger_consistency` with **both** independently
+retained commitment digests. The [append-consistency contract](docs/ledger-consistency.md)
+specifies compact prefix proofs and the limits of their hash-chain guarantee.
+Run `python examples/ledger_consistency.py`; this is not a signature or witness service.
+
 Clone the repository, create a virtual environment, and install the package:
 
 ```bash

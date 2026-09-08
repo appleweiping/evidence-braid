@@ -158,7 +158,8 @@ For old prefixes after an append, first reopen `LedgerIndex(latest, expected_hea
 prefix_count=old_count)`. That API verifies the entire supplied chain and pins the old prefix;
 rebuilding its `LedgerProofIndex` gives the original commitment. Later backdated appends do not
 change old proofs. This does not provide a logarithmic append-consistency proof between different
-heads: that remains separate open work.
+heads. The separate [append-consistency API](ledger-consistency.md) now supplies that original
+bounded receipt-tree capability using two independently retained commitment digests.
 
 ## Resource bounds and lifecycle
 
@@ -217,7 +218,7 @@ Frozen first-party contracts used to establish the comparison surface:
 
 This slice adds original detached membership, not their receipt dialects or assurance levels.
 Signatures, witnessed checkpoints, key lifecycle, nonmembership/query-completeness proofs,
-append-consistency proofs, packaged schema catalogs, independent non-Python verification and
+packaged schema catalogs, independent non-Python verification and
 proof-server deployment remain open in the [whole-repository ledger](parity-ledger.md).
 
 ## Local verification snapshot
