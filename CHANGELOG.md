@@ -7,6 +7,10 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Atomic no-replace directory publication of the unchanged offline schema catalog,
+  strict bounded directory verification, explicit staging ownership/cleanup and
+  publication acknowledgement, Windows/Linux native backends and offline CLI/example.
+
 - Offline Draft 2020-12 structural profiles for seven existing event, ledger,
   authority, workflow and proof wire formats, with shared definitions, pinned
   versioned catalog and SHA-256 inventory. Checked package resources, a closed

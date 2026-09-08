@@ -44,6 +44,10 @@ standalone operator report is [`examples/decision.html`](examples/decision.html)
 
 The package has no runtime dependencies and supports Python 3.11 or newer.
 
+The fixed offline schema catalog can also be [published as an atomic directory](docs/schema-directory.md)
+on supported Windows/Linux filesystems, with no-replace semantics, bounded complete verification
+and explicit ownership/acknowledgement failures. Its existing ZIP format is unchanged.
+
 ## Authority-checked workflows
 
 The optional [workflow layer](docs/authority-workflows.md) binds real evidence

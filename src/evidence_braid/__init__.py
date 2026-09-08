@@ -57,6 +57,12 @@ from .schema_catalog import (
     schema_registry,
     verify_schema_archive,
 )
+from .schema_directory import (
+    SchemaDirectoryExport,
+    SchemaDirectoryPublicationError,
+    export_schema_directory,
+    verify_schema_directory,
+)
 from .storage import SQLiteLedger, load_ledger, write_ledger
 from .workflow import (
     ClaimWorkflow,
@@ -108,6 +114,8 @@ __all__ = [
     "RobustnessReport",
     "SQLiteLedger",
     "SchemaCatalog",
+    "SchemaDirectoryExport",
+    "SchemaDirectoryPublicationError",
     "SchemaExport",
     "ScopeGrant",
     "Signal",
@@ -127,6 +135,7 @@ __all__ = [
     "build_workflow",
     "classification_metrics",
     "evaluate",
+    "export_schema_directory",
     "export_schemas",
     "load_ledger",
     "load_schema_catalog",
@@ -145,6 +154,7 @@ __all__ = [
     "verify_ledger_consistency",
     "verify_ledger_membership",
     "verify_schema_archive",
+    "verify_schema_directory",
     "write_ledger",
     "write_workflow_bundle",
 ]

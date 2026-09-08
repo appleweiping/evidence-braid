@@ -36,7 +36,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 | Strict portable hash receipts (`itself/receipts.py`, `ledger_agent/receipts.py`) | `ledger.py` v1 reader/v2 chain plus authority/evidence/manifest-bound workflow envelopes | Partial: strict offline workflow replay and authority/action binding now exist; minimized reasoning disclosures and external attestations remain open. |
 | Graph/reference provenance (`itself/bundle.py`, `ledger_agent/tool_receipts.py`) | `provenance.py` links plus workflow evidence/claim/scope checks and artifact content commitments | Partial: artifact references now have content bindings and unresolved-reference rejection; execution/tool lineage and artifact custody remain open. |
 | Closed artifact bundle publication (`itself/evidence_bundle.py`) | `artifacts.py`: closed canonical content-addressed ZIP32, streamed object digests, exact inventory, no-replace atomic publication and externally anchored replay | Implemented bounded original local profile; not upstream directory/wire equivalence. Authenticated custody, signatures and external artifact-store integrations remain open. |
-| Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | `schema_catalog.py`: seven original structural wire profiles, shared defs, closed pinned catalog/SHA inventory, packaged resources and atomic no-replace ZIP; independent Draft 2020-12 tests plus existing Node append verifier | Partial original profile: broader epistemic records, upstream wire conformance, atomic directory export, multi-line loading and independent cross-language receipt/member verification remain open. |
+| Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | `schema_catalog.py` / `schema_directory.py`: seven original structural wire profiles, shared defs, closed pinned catalog/SHA inventory, packaged resources, atomic no-replace ZIP and Windows/Linux directories; independent Draft 2020-12 tests plus existing Node append verifier | Partial original profile: broader epistemic records, upstream wire conformance, multi-line loading and independent cross-language receipt/member verification remain open. |
 | External inference/check boundary (`itself/inference.py`) | Events accepted from caller | Open: bounded structured request/response adapters, artifact retention, explicit external check result and authority lifecycle. |
 | Persistent query and pagination (`ledger_agent/server/api.py`, `test_export_pagination.py`) | `query.py` head-anchored indexes, exact field/time filters, reusable bounded pages and old-prefix reopening from SQLite snapshots | Partial original local retrieval: persistent secondary indexes, authenticated exports, richer expressions/proofs and reference workload comparisons remain open. |
 | Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: selected receipt membership; `consistency.py`: compact two-anchor prefix proofs; `verification/ledger-consistency.mjs`: independent Node bit/index verification of the closed append-proof profile | Partial original proof profile: signed/witnessed heads, hidden new chain-link verification, nonmembership/query-completeness proofs, cross-language receipt/selected-membership verification and broader conformance remain open. |
@@ -254,3 +254,47 @@ The new `jsonschema` dependency is a dev/test extra only; runtime dependencies
 remain empty. This local run is not a Linux or remote-CI result. Broader record
 schemas, upstream conformance, multi-line loading, directory publication and all
 remaining whole-repository rows remain open.
+
+## Atomic offline schema directory increment
+
+The original [directory publication API](schema-directory.md) reuses the fixed ten-resource
+`wire-1` publication with no byte, catalog-pin or ZIP-profile changes. It writes and fsyncs explicit
+same-parent staging files, verifies their complete content, then uses Windows no-replace rename
+or Linux `renameat2(RENAME_NOREPLACE)`. Strict bounded directory verification rejects extra,
+missing, linked/reparse, nonregular or altered entries. Cleanup only attempts still-observed owned
+paths, retains unknown/replaced residue and reports publication acknowledgement separately from
+success of error/report delivery. This closes the previously missing local atomic directory
+publication subset, not upstream format compatibility, signed distribution or full repository parity.
+
+The final Windows/Python **3.14.5** full suite passed **1,172 tests**, with only the **3
+symlink-privilege skips** below, in **336.32 seconds**. Combined statement/branch coverage was
+**99.07%**, exceeding the unchanged **98%** gate. Runtime and resource warnings were errors;
+Node was required. The existing schema generator and catalog retained **100%** coverage and
+their exact golden bytes. Reports are `build/schema-directory-full.xml` and
+`build/schema-directory-coverage.xml` (local ignored build output).
+
+The 55 new filesystem cases cover bounded reads/enumeration, exact publication bytes,
+competing publishers, existing-target preservation, descriptor/iterator failures, partial writes,
+fsync failures, replaced or unknown residue, lost rename acknowledgements, control-exception
+priority and relocated verification in a fresh isolated process. The focused Windows/Python
+3.14.5 run passed **52 tests**, with **3 genuine symlink-privilege skips**, in **43.60 seconds**;
+the new module reached **99.40%** combined statement/branch coverage (all statements covered).
+WSL Linux/Python **3.12.3** passed **all 55 cases** in **42.55 seconds**, exercising actual
+`renameat2(RENAME_NOREPLACE)` and all three symlink cases. This was a focused Linux run, not a
+Linux full-suite result. Its task-specific venv installed the built wheel without a package index
+or runtime dependencies and used the system pytest 9.1.1 read-only. A preceding venv-creation
+attempt failed in `ensurepip` before any test ran; the replacement used `--without-pip` and the
+system pip frontend targeted only at that venv.
+
+The unchanged independent Node 22.21.1 verifier passed all **8 groups**, with **99.01%** lines,
+**98.94%** branches and **100%** functions. Independent peer probes also verified a real
+two-publisher race, successful rename followed by a lost acknowledgement, and an interrupted
+unknown-location outcome that preserved the complete directory. Native publication support was
+tested on Windows and Linux; other operating systems intentionally fail closed.
+
+Ruff lint/format (**91 Python files**), strict Mypy (**31 source modules**), Bandit, frozen-lock
+validation, wheel/sdist builds, strict Twine metadata and wheel-content checks passed. The
+isolated Windows wheel, installed without an index or dependencies, executed the complete
+publish/relocate/new-process verifier example. No runtime dependency, package version, catalog
+pin, resource bytes, existing ZIP API or CI policy changed. These are local results, not a claim
+of remotely published or merged code; full reference-repository parity remains open.

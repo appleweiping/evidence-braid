@@ -33,6 +33,7 @@ from .schema_catalog import (
     schema_bytes,
     verify_schema_archive,
 )
+from .schema_directory import export_schema_directory, verify_schema_directory
 from .storage import MAX_LEDGER_BYTES, SQLiteLedger, load_ledger
 from .workflow import load_workflow_bundle, replay_workflow
 
@@ -61,6 +62,15 @@ def _parser() -> argparse.ArgumentParser:
     )
     schema_verify.add_argument("archive", type=Path)
     schema_verify.add_argument("--expected-catalog-digest", required=True)
+    schema_directory_export = schema_commands.add_parser(
+        "export-directory", help="atomically publish the fixed directory without replacement"
+    )
+    schema_directory_export.add_argument("directory", type=Path)
+    schema_directory_verify = schema_commands.add_parser(
+        "verify-directory", help="verify exactly the fixed offline schema directory"
+    )
+    schema_directory_verify.add_argument("directory", type=Path)
+    schema_directory_verify.add_argument("--expected-catalog-digest", required=True)
 
     evaluate_parser = subparsers.add_parser("evaluate", help="evaluate all evidence at one instant")
     evaluate_parser.add_argument("policy", type=Path, help="policy JSON file")
@@ -376,6 +386,21 @@ def run(argv: Sequence[str] | None = None) -> int:
                 _emit("-", schema_bytes(args.name).decode("utf-8"))
             elif args.schema_command == "export":
                 _emit("-", canonical_json(export_schemas(args.archive).to_dict()))
+            elif args.schema_command == "export-directory":
+                directory = export_schema_directory(args.directory)
+                try:
+                    _emit("-", canonical_json(directory.to_dict()))
+                except BaseException as exc:
+                    detail = f"schema directory published at {directory.destination}; report failed"
+                    if isinstance(exc, Exception):
+                        raise InputFormatError(detail) from exc
+                    exc.add_note(detail)
+                    raise
+            elif args.schema_command == "verify-directory":
+                directory = verify_schema_directory(
+                    args.directory, expected_catalog_digest=args.expected_catalog_digest
+                )
+                _emit("-", canonical_json(directory.to_dict()))
             else:
                 exported = verify_schema_archive(
                     args.archive, expected_catalog_digest=args.expected_catalog_digest

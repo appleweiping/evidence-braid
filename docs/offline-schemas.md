@@ -171,8 +171,9 @@ multiple bounded byte buffers are materialized. A caller-supplied pathological
 schema or unbounded application document is not evaluated by this API. Filesystem
 I/O, native filesystem behavior and process interruption are not hard real-time
 guarantees; hostile same-user filesystem mutation is outside the trust model.
-Directory metadata power-loss durability is not promised. **Atomic directory
-export remains open**; this single-file exchange does not implement it.
+Directory metadata power-loss durability is not promised. The distinct
+[`export_schema_directory` API](schema-directory.md) now adds atomic directory
+visibility on supported Windows/Linux filesystems without altering this ZIP exchange.
 
 ## Publication and maintenance
 
