@@ -5,6 +5,10 @@ of another committed tree. It uses the existing [membership profile](ledger-memb
 including its original domain-separated hashes and unpadded tree shape. The verifier needs
 **two separately retained commitment digests**, without downloading either complete ledger.
 This is not a signed checkpoint, an identity scheme or a durable-commit attestation.
+An [independent Node.js verifier](../verification/README.md) accepts this exact
+closed envelope and both external anchors without Python or a receipt parser.
+Its distinct bit/index reconstruction is tested against real Python v1/v2 proofs;
+it does not generalize this profile to arbitrary JSON canonicalization.
 
 ```python
 from evidence_braid import (

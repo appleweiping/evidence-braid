@@ -96,6 +96,9 @@ To compare two retained snapshots without revealing their complete ledgers, use
 retained commitment digests. The [append-consistency contract](docs/ledger-consistency.md)
 specifies compact prefix proofs and the limits of their hash-chain guarantee.
 Run `python examples/ledger_consistency.py`; this is not a signature or witness service.
+The [standalone Node.js verifier](verification/README.md) checks the same detached
+append proof with an independent iterative algorithm, without running Python or
+loading the full ledger. It requires both externally established anchors.
 
 Clone the repository, create a virtual environment, and install the package:
 

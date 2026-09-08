@@ -49,6 +49,9 @@ Source = "https://github.com/appleweiping/evidence-braid"
 [tool.hatch.build.targets.wheel]
 packages = ["src/evidence_braid"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"verification/ledger-consistency.mjs" = "evidence_braid/verification/ledger-consistency.mjs"
+
 [tool.hatch.build.targets.sdist]
 include = [
   "/CITATION.cff",
@@ -66,6 +69,7 @@ include = [
   "/src",
   "/tests",
   "/uv.lock",
+  "/verification",
 ]
 
 [tool.pytest.ini_options]

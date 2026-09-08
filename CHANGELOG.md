@@ -7,6 +7,11 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Standalone Node.js verification of canonical two-anchor append-consistency
+  proofs, using an independent bit/index algorithm and native bounded-byte-view
+  admission. Real v1/v2 Python-to-Node proof conformance runs alongside its own
+  mutation/boundary suite; the module ships in wheel/sdist without runtime
+  dependency changes. CI also scans JavaScript and requires the Node checks.
 - Head-anchored ledger indexes, exact event/source/claim/modality/signal/group
   queries, independent observation/ingestion intervals and bounded stable pages.
   Includes old-prefix reopening after backdated appends, query-bound cursors,

@@ -39,7 +39,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 | Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | Strict Python models and policy migrations | Open: packaged JSON Schemas/catalog/checksums, language-independent fixtures and a second implementation of verification. |
 | External inference/check boundary (`itself/inference.py`) | Events accepted from caller | Open: bounded structured request/response adapters, artifact retention, explicit external check result and authority lifecycle. |
 | Persistent query and pagination (`ledger_agent/server/api.py`, `test_export_pagination.py`) | `query.py` head-anchored indexes, exact field/time filters, reusable bounded pages and old-prefix reopening from SQLite snapshots | Partial original local retrieval: persistent secondary indexes, authenticated exports, richer expressions/proofs and reference workload comparisons remain open. |
-| Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: canonical receipt leaves, count-derived Merkle paths and an external commitment; `consistency.py`: compact prefix proofs with two externally retained complete commitments | Partial original proof profile: selected membership and two-snapshot receipt-tree consistency. Signed/witnessed heads, hidden new chain-link verification, nonmembership/query-completeness proofs and independent non-Python verification remain open. |
+| Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: selected receipt membership; `consistency.py`: compact two-anchor prefix proofs; `verification/ledger-consistency.mjs`: independent Node bit/index verification of the closed append-proof profile | Partial original proof profile: signed/witnessed heads, hidden new chain-link verification, nonmembership/query-completeness proofs, cross-language receipt/selected-membership verification and broader conformance remain open. |
 | HTTP/SDK/MCP service (`ledger_agent/server/`, `mcp_server.py`, `client.py`) | Local Python API and CLI | Open: service protocol, authentication/tenant boundaries, request limits, idempotency, health and contract tests. |
 | Attestation and independent witness (`ledger_agent/witness.py`, `continuous-attestation.md`) | Optional caller-retained head comparison | Open: signed/witnessed checkpoints, key lifecycle and externally tested replacement/rollback threat model. |
 | Governance/receipts/OSCAL projections (`ledger_agent/context_release.py`, `oscal.py`, `composition.py`) | Existing policy/report mechanics | Open: recorded authority/action/result provenance, policy-bound disclosure, schema-validated projection and compound action receipts. |
@@ -184,3 +184,42 @@ is deliberately vacuous; an equal-size proof requires identical complete headers
 completeness, nonmembership, cross-language canonical verification and service operation
 remain open. This is an incremental capability, not whole-reference-repository parity or
 an externally audited cryptographic protocol.
+
+## Independent Node verifier increment
+
+`verification/ledger-consistency.mjs` independently verifies the existing closed
+append-consistency proof with a bit/index algorithm, without Python, receipt
+parsing, dependencies, network access or self-selected anchors. Its admission
+uses native byte-view getters and bounded copying before strict UTF-8, depth,
+integer, closed-shape and canonical-spelling checks. A review-discovered
+shadowed-byte-length allocation bypass is fixed and covered by a regression.
+The standalone module is included in both the source distribution and wheel.
+
+The final JavaScript suite passed **eight groups**: 2,211 independently generated
+prefix pairs through 65 leaves, seven sparse-subtree pairs reaching 100,000
+entries, 1,024 single-bit path mutations, malformed envelopes, anchor rejection
+and adversarial byte-view hooks. Production-module coverage is **99.01% lines,
+98.94% branches and 100% functions**, above the new explicit 98/95/100 gates.
+The sparse roots are deliberately opaque protocol fixtures, not actual receipts.
+
+Three final Python/Node interoperability tests passed against real v1/v2
+ledgers containing Unicode, 300-digit integers and small floats, covering 484
+selected prefix pairs plus mutated paths and wrong anchors in **31.51 seconds**
+on Windows/Python 3.14.5, with runtime and resource warnings as errors. This run
+includes the byte-view hardening. The hardened implementation also passed
+the actual three-to-seven receipt example from an isolated installed wheel.
+Python production code is unchanged. The parent's 1,028-test full-suite results
+above remain historical evidence, not a claim of a newly executed full suite.
+
+Ruff lint/format (82 Python files), strict Mypy (28 source modules), Bandit,
+frozen-lock validation, wheel/sdist builds, strict Twine metadata and wheel
+content checks passed. The installed-wheel example used no package index or
+runtime dependencies; Node is an explicitly separate runtime requirement.
+
+CI and release checks explicitly require Node, run both implementations, apply
+the JavaScript coverage gates and exercise the module from an isolated wheel.
+CodeQL now scans Python and JavaScript. No dependency, release version, npm
+publication, credentials or branch-protection policy changed. Remote exact-head
+results are recorded separately after publication. Arbitrary receipt JSON
+canonicalization, selected-membership interoperability, signatures, witnesses
+and all remaining whole-repository rows stay open.
