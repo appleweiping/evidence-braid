@@ -22,7 +22,8 @@ from .io import (
     write_text,
 )
 from .migrations import CURRENT_POLICY_SCHEMA_VERSION, migrate_policy_document
-from .models import Policy, parse_timestamp
+from .models import Modality, Policy, Signal, parse_timestamp
+from .query import LedgerIndex, LedgerQuery
 from .replay import replay
 from .report import render_html, render_svg
 from .robustness import robustness
@@ -112,6 +113,29 @@ def _parser() -> argparse.ArgumentParser:
     ledger_parser = subparsers.add_parser(
         "ledger", help="append, verify, export, or import a durable evidence ledger"
     )
+    query_parser = subparsers.add_parser("ledger-query", help="page a verified fixed ledger prefix")
+    query_parser.add_argument("database", type=Path)
+    query_parser.add_argument(
+        "--expected-head", required=True, help="independently retained prefix head"
+    )
+    query_parser.add_argument(
+        "--prefix-count", type=int, help="old prefix size when the store has advanced"
+    )
+    query_parser.add_argument("--cursor", help="continuation token for the same prefix and query")
+    query_parser.add_argument("--limit", type=int, default=100)
+    query_parser.add_argument("--max-entry-bytes", type=int, default=4 * 1024 * 1024)
+    for name in ("event-id", "claim", "source", "correlation-group"):
+        query_parser.add_argument(f"--{name}", action="append", default=[])
+    query_parser.add_argument(
+        "--modality", choices=[item.value for item in Modality], action="append", default=[]
+    )
+    query_parser.add_argument(
+        "--signal", choices=[item.value for item in Signal], action="append", default=[]
+    )
+    for name in ("observed-start", "observed-end", "ingested-start", "ingested-end"):
+        query_parser.add_argument(
+            f"--{name}", help="timezone-aware ISO-8601 bound; end is exclusive"
+        )
     ledger_commands = ledger_parser.add_subparsers(dest="ledger_command", required=True)
     for command in ("append", "verify", "export", "import"):
         operation = ledger_commands.add_parser(command)
@@ -261,6 +285,37 @@ def _ledger(args: argparse.Namespace) -> None:
     _emit(args.output, content)
 
 
+def _ledger_query(args: argparse.Namespace) -> None:
+    query = LedgerQuery(
+        event_ids=tuple(args.event_id),
+        claims=tuple(args.claim),
+        sources=tuple(args.source),
+        modalities=tuple(Modality(value) for value in args.modality),
+        signals=tuple(Signal(value) for value in args.signal),
+        correlation_groups=tuple(args.correlation_group),
+        observed_start=parse_timestamp(args.observed_start, "observed_start")
+        if args.observed_start
+        else None,
+        observed_end=parse_timestamp(args.observed_end, "observed_end")
+        if args.observed_end
+        else None,
+        ingested_start=parse_timestamp(args.ingested_start, "ingested_start")
+        if args.ingested_start
+        else None,
+        ingested_end=parse_timestamp(args.ingested_end, "ingested_end")
+        if args.ingested_end
+        else None,
+    )
+    ledger = SQLiteLedger(args.database, create=False).snapshot()
+    selection = LedgerIndex(
+        ledger, expected_head=args.expected_head, prefix_count=args.prefix_count
+    ).select(query)
+    page = selection.page(
+        limit=args.limit, max_entry_bytes=args.max_entry_bytes, cursor=args.cursor
+    )
+    _emit("-", canonical_json(page.to_dict(), pretty=False) + "\n")
+
+
 def _artifact_bundle(args: argparse.Namespace) -> None:
     authority = AuthorityPolicy.from_dict(load_json(args.authority))
     if args.bundle_command == "create":
@@ -291,6 +346,9 @@ def _artifact_bundle(args: argparse.Namespace) -> None:
 def run(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "ledger-query":
+            _ledger_query(args)
+            return 0
         if args.command == "artifact-bundle":
             _artifact_bundle(args)
             return 0

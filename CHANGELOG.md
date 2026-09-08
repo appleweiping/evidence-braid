@@ -7,6 +7,10 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Head-anchored ledger indexes, exact event/source/claim/modality/signal/group
+  queries, independent observation/ingestion intervals and bounded stable pages.
+  Includes old-prefix reopening after backdated appends, query-bound cursors,
+  the stdout-only `ledger-query` CLI and a real SQLite demonstration.
 - Closed content-addressed artifact ZIPs with complete reference inventory,
   streamed deduplicated objects, canonical ZIP32 preflight bounds, independently
   anchored authority replay and no-replace atomic publication. Includes offline

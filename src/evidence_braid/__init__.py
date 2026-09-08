@@ -24,6 +24,7 @@ from .ledger import EvidenceLedger, LedgerEntry, build_ledger
 from .metrics import classification_metrics
 from .models import Adjudication, EvidenceEvent, Modality, Outcome, Policy, Signal, Verdict
 from .provenance import ProvenanceEdge, ProvenanceGraph, ProvenanceNode, build_provenance
+from .query import LedgerIndex, LedgerPage, LedgerQuery, LedgerSelection
 from .replay import replay
 from .report import render_html, render_svg
 from .robustness import (
@@ -63,6 +64,10 @@ __all__ = [
     "EvidenceLedger",
     "InputFormatError",
     "LedgerEntry",
+    "LedgerIndex",
+    "LedgerPage",
+    "LedgerQuery",
+    "LedgerSelection",
     "Modality",
     "Outcome",
     "Policy",

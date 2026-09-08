@@ -78,6 +78,12 @@ real evidence. Archive validity is not actor authentication or proof of truth.
 
 ## Quick start
 
+For source/claim/time filtering and stable receipt pagination, see
+[anchored ledger queries](docs/ledger-query.md). `LedgerIndex` retains a verified
+historical prefix and rejects cursors for another head or query. Run
+`python examples/ledger_query.py` for a real SQLite append/reopen demonstration.
+This is local retrieval, not a remote authenticated query service.
+
 Clone the repository, create a virtual environment, and install the package:
 
 ```bash
