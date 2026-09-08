@@ -7,6 +7,13 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Offline Draft 2020-12 structural profiles for seven existing event, ledger,
+  authority, workflow and proof wire formats, with shared definitions, pinned
+  versioned catalog and SHA-256 inventory. Checked package resources, a closed
+  URI registry and no-replace canonical STORED ZIP export/verification ship in
+  the dependency-free runtime. Independent `jsonschema` interoperability is a
+  dev-only test dependency; semantic authorization/proof checks remain separate.
+
 - Standalone Node.js verification of canonical two-anchor append-consistency
   proofs, using an independent bit/index algorithm and native bounded-byte-view
   admission. Real v1/v2 Python-to-Node proof conformance runs alongside its own

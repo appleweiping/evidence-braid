@@ -1,0 +1,6 @@
+{
+  "$id": "urn:evidence-braid:schemas:wire-1:authority-policy",
+  "$ref": "urn:evidence-braid:schemas:wire-1:common#/$defs/AuthorityPolicy",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evidence Braid authority-policy structural wire profile"
+}

@@ -36,7 +36,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 | Strict portable hash receipts (`itself/receipts.py`, `ledger_agent/receipts.py`) | `ledger.py` v1 reader/v2 chain plus authority/evidence/manifest-bound workflow envelopes | Partial: strict offline workflow replay and authority/action binding now exist; minimized reasoning disclosures and external attestations remain open. |
 | Graph/reference provenance (`itself/bundle.py`, `ledger_agent/tool_receipts.py`) | `provenance.py` links plus workflow evidence/claim/scope checks and artifact content commitments | Partial: artifact references now have content bindings and unresolved-reference rejection; execution/tool lineage and artifact custody remain open. |
 | Closed artifact bundle publication (`itself/evidence_bundle.py`) | `artifacts.py`: closed canonical content-addressed ZIP32, streamed object digests, exact inventory, no-replace atomic publication and externally anchored replay | Implemented bounded original local profile; not upstream directory/wire equivalence. Authenticated custody, signatures and external artifact-store integrations remain open. |
-| Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | Strict Python models and policy migrations | Open: packaged JSON Schemas/catalog/checksums, language-independent fixtures and a second implementation of verification. |
+| Offline versioned schemas and interoperability (`itself/schemas/`, `schema_export.py`, JavaScript conformance) | `schema_catalog.py`: seven original structural wire profiles, shared defs, closed pinned catalog/SHA inventory, packaged resources and atomic no-replace ZIP; independent Draft 2020-12 tests plus existing Node append verifier | Partial original profile: broader epistemic records, upstream wire conformance, atomic directory export, multi-line loading and independent cross-language receipt/member verification remain open. |
 | External inference/check boundary (`itself/inference.py`) | Events accepted from caller | Open: bounded structured request/response adapters, artifact retention, explicit external check result and authority lifecycle. |
 | Persistent query and pagination (`ledger_agent/server/api.py`, `test_export_pagination.py`) | `query.py` head-anchored indexes, exact field/time filters, reusable bounded pages and old-prefix reopening from SQLite snapshots | Partial original local retrieval: persistent secondary indexes, authenticated exports, richer expressions/proofs and reference workload comparisons remain open. |
 | Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: selected receipt membership; `consistency.py`: compact two-anchor prefix proofs; `verification/ledger-consistency.mjs`: independent Node bit/index verification of the closed append-proof profile | Partial original proof profile: signed/witnessed heads, hidden new chain-link verification, nonmembership/query-completeness proofs, cross-language receipt/selected-membership verification and broader conformance remain open. |
@@ -223,3 +223,34 @@ publication, credentials or branch-protection policy changed. Remote exact-head
 results are recorded separately after publication. Arbitrary receipt JSON
 canonicalization, selected-membership interoperability, signatures, witnesses
 and all remaining whole-repository rows stay open.
+
+## Offline-schema increment verification
+
+The original [offline catalog](offline-schemas.md) adds seven canonical serialized
+wire profiles and shared definitions, a closed size/SHA-256 catalog, pinned
+publication bytes, a no-fetch URI registry and canonical STORED ZIP exchange.
+The frozen first-party [reference schema contract](https://github.com/Greater-Expanse/itself/blob/b6057fe96fdecdec34ec28afdffc0628549e8831/docs/SCHEMAS.md)
+identified the catalog/offline/publication comparison surface; no implementation
+code was copied. This increment implements atomic **single-file** no-replace
+publication, not the reference's directory-export interface or full protocol.
+
+On Windows/Python **3.14.5**, the final full suite passed **1,120 tests**, no
+skips, in **257.96 seconds**, with **99.05%** combined statement/branch coverage
+and the unchanged **98%** gate. Resource and runtime warnings were errors;
+Node **22.21.1** was required for the existing independent proof tests. Both
+new source modules reached **100%** statement/branch coverage. The preceding
+89-case focused run passed in 137.73 seconds, including actual wheel/sdist builds,
+exact packaged resource sets, no-site/no-dependency zipped-wheel execution,
+relocated process verification and independent `Draft202012Validator` checks.
+
+The checked-in publication contains 10 files totaling **26,961 bytes**, including
+eight schemas, catalog and checksum inventory. Real competing Windows hard-link
+publications produced one winner without replacing foreign content or leaking
+staging files. Malformed catalog/schema/ZIP inputs and rehashed publisher errors
+are rejected. Real schema-valid but unauthorized workflow histories, altered
+counts/proofs and mathematical-integer/native-type differences demonstrate that
+schema validity does not certify replay permission, canonical bytes or hashes.
+The new `jsonschema` dependency is a dev/test extra only; runtime dependencies
+remain empty. This local run is not a Linux or remote-CI result. Broader record
+schemas, upstream conformance, multi-line loading, directory publication and all
+remaining whole-repository rows remain open.

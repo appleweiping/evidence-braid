@@ -46,6 +46,17 @@ from .robustness import (
     analyze_robustness,
     robustness,
 )
+from .schema_catalog import (
+    SCHEMA_PUBLICATION_LINE,
+    PublishedSchema,
+    SchemaCatalog,
+    SchemaExport,
+    export_schemas,
+    load_schema_catalog,
+    schema_bytes,
+    schema_registry,
+    verify_schema_archive,
+)
 from .storage import SQLiteLedger, load_ledger, write_ledger
 from .workflow import (
     ClaimWorkflow,
@@ -59,6 +70,7 @@ from .workflow import (
 )
 
 __all__ = [
+    "SCHEMA_PUBLICATION_LINE",
     "ActorKind",
     "Adjudication",
     "ArtifactBundleLimits",
@@ -91,9 +103,12 @@ __all__ = [
     "ProvenanceEdge",
     "ProvenanceGraph",
     "ProvenanceNode",
+    "PublishedSchema",
     "RobustnessImpact",
     "RobustnessReport",
     "SQLiteLedger",
+    "SchemaCatalog",
+    "SchemaExport",
     "ScopeGrant",
     "Signal",
     "ValidationError",
@@ -112,7 +127,9 @@ __all__ = [
     "build_workflow",
     "classification_metrics",
     "evaluate",
+    "export_schemas",
     "load_ledger",
+    "load_schema_catalog",
     "load_workflow_bundle",
     "majority_vote",
     "prove_ledger_consistency",
@@ -122,9 +139,12 @@ __all__ = [
     "replay",
     "replay_workflow",
     "robustness",
+    "schema_bytes",
+    "schema_registry",
     "verify_artifact_bundle",
     "verify_ledger_consistency",
     "verify_ledger_membership",
+    "verify_schema_archive",
     "write_ledger",
     "write_workflow_bundle",
 ]

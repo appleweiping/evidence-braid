@@ -1,0 +1,6 @@
+{
+  "$id": "urn:evidence-braid:schemas:wire-1:workflow-bundle",
+  "$ref": "urn:evidence-braid:schemas:wire-1:common#/$defs/WorkflowBundle",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evidence Braid workflow-bundle structural wire profile"
+}

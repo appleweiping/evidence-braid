@@ -1,0 +1,6 @@
+{
+  "$id": "urn:evidence-braid:schemas:wire-1:ledger-membership",
+  "$ref": "urn:evidence-braid:schemas:wire-1:common#/$defs/LedgerMembershipBundle",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evidence Braid ledger-membership structural wire profile"
+}

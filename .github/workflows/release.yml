@@ -88,6 +88,7 @@ jobs:
           uv pip install --python "${RUNNER_TEMP}/release-venv/bin/python" --no-deps dist/*.whl
           "${RUNNER_TEMP}/release-venv/bin/python" -c "import importlib, os; module = importlib.import_module(os.environ['PROJECT_MODULE']); assert module.__version__ == os.environ['GITHUB_REF_NAME'][1:]"
           "${RUNNER_TEMP}/release-venv/bin/python" -I "${GITHUB_WORKSPACE}/examples/cross_runtime_consistency.py"
+          "${RUNNER_TEMP}/release-venv/bin/python" -I "${GITHUB_WORKSPACE}/examples/offline_schemas.py"
       - name: Generate checksums
         run: |
           cd dist

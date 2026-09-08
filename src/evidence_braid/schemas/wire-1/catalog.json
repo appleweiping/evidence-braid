@@ -1,0 +1,80 @@
+{
+  "dialect": "https://json-schema.org/draft/2020-12/schema",
+  "kind": "evidence-braid-schema-catalog",
+  "publication_line": "wire-1",
+  "schema_version": "1.0",
+  "schemas": [
+    {
+      "name": "authority-policy",
+      "path": "wire-1/authority-policy.schema.json",
+      "public": true,
+      "schema_id": "urn:evidence-braid:schemas:wire-1:authority-policy",
+      "sha256": "0f2875a7cca6f4edf377acc60fdbb3e0856af4e8a4801487cf08c31c82e37abf",
+      "size_bytes": 274,
+      "title": "Evidence Braid authority-policy structural wire profile"
+    },
+    {
+      "name": "common",
+      "path": "wire-1/common.schema.json",
+      "public": false,
+      "schema_id": "urn:evidence-braid:schemas:wire-1:common",
+      "sha256": "32675e1111eabf4521308539fd5dce2deb5b9ab91a94ad06bb62f3b9c1d60e22",
+      "size_bytes": 20976,
+      "title": "Evidence Braid common structural wire profile"
+    },
+    {
+      "name": "evidence-event",
+      "path": "wire-1/evidence-event.schema.json",
+      "public": true,
+      "schema_id": "urn:evidence-braid:schemas:wire-1:evidence-event",
+      "sha256": "a99683d63dca76efc82d9de1f8fe179da4096798232e2d9abb8df70d0bcc41b1",
+      "size_bytes": 268,
+      "title": "Evidence Braid evidence-event structural wire profile"
+    },
+    {
+      "name": "evidence-ledger",
+      "path": "wire-1/evidence-ledger.schema.json",
+      "public": true,
+      "schema_id": "urn:evidence-braid:schemas:wire-1:evidence-ledger",
+      "sha256": "0367169b2621afbfe3770ce049f029c5fcedfb71ba6c4c191ee3c6890d79a356",
+      "size_bytes": 271,
+      "title": "Evidence Braid evidence-ledger structural wire profile"
+    },
+    {
+      "name": "ledger-commitment",
+      "path": "wire-1/ledger-commitment.schema.json",
+      "public": true,
+      "schema_id": "urn:evidence-braid:schemas:wire-1:ledger-commitment",
+      "sha256": "eff5a6e25df769f734bc264f1adc04b8190638bb6822fac12287c9624ad37b32",
+      "size_bytes": 277,
+      "title": "Evidence Braid ledger-commitment structural wire profile"
+    },
+    {
+      "name": "ledger-consistency",
+      "path": "wire-1/ledger-consistency.schema.json",
+      "public": true,
+      "schema_id": "urn:evidence-braid:schemas:wire-1:ledger-consistency",
+      "sha256": "b07d4dfb3c723fd95caa65499505d6c0d0c50955f059e7e2dd665810d5f458f2",
+      "size_bytes": 285,
+      "title": "Evidence Braid ledger-consistency structural wire profile"
+    },
+    {
+      "name": "ledger-membership",
+      "path": "wire-1/ledger-membership.schema.json",
+      "public": true,
+      "schema_id": "urn:evidence-braid:schemas:wire-1:ledger-membership",
+      "sha256": "6888d2efaf640c0f25a373ed66cbb1429371bc53d063907f098de155dd543032",
+      "size_bytes": 283,
+      "title": "Evidence Braid ledger-membership structural wire profile"
+    },
+    {
+      "name": "workflow-bundle",
+      "path": "wire-1/workflow-bundle.schema.json",
+      "public": true,
+      "schema_id": "urn:evidence-braid:schemas:wire-1:workflow-bundle",
+      "sha256": "5aab0f15ef3d553a9e8244a493c60bdbe8048388dd040807cb5bf1d24ae0846a",
+      "size_bytes": 271,
+      "title": "Evidence Braid workflow-bundle structural wire profile"
+    }
+  ]
+}

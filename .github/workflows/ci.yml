@@ -79,6 +79,7 @@ jobs:
           /tmp/evidence-braid-wheel/bin/evidence-braid evaluate "$GITHUB_WORKSPACE/examples/policy.json" "$GITHUB_WORKSPACE/examples/events.jsonl" --as-of 2026-08-31T12:00:00Z --output decision-from-wheel.json
           /tmp/evidence-braid-wheel/bin/python -c "import json; assert json.load(open('decision-from-wheel.json', encoding='utf-8'))['policy_id'] == 'operations-demo-v1'"
           /tmp/evidence-braid-wheel/bin/python -I "$GITHUB_WORKSPACE/examples/cross_runtime_consistency.py"
+          /tmp/evidence-braid-wheel/bin/python -I "$GITHUB_WORKSPACE/examples/offline_schemas.py"
 
   gate:
     name: CI gate

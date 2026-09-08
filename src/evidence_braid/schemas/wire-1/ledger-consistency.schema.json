@@ -1,0 +1,6 @@
+{
+  "$id": "urn:evidence-braid:schemas:wire-1:ledger-consistency",
+  "$ref": "urn:evidence-braid:schemas:wire-1:common#/$defs/LedgerConsistencyProof",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evidence Braid ledger-consistency structural wire profile"
+}

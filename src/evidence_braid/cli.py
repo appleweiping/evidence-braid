@@ -27,6 +27,12 @@ from .query import LedgerIndex, LedgerQuery
 from .replay import replay
 from .report import render_html, render_svg
 from .robustness import robustness
+from .schema_catalog import (
+    export_schemas,
+    load_schema_catalog,
+    schema_bytes,
+    verify_schema_archive,
+)
 from .storage import MAX_LEDGER_BYTES, SQLiteLedger, load_ledger
 from .workflow import load_workflow_bundle, replay_workflow
 
@@ -38,6 +44,23 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    schema_parser = subparsers.add_parser(
+        "schema", help="inspect/export fixed offline wire schemas"
+    )
+    schema_commands = schema_parser.add_subparsers(dest="schema_command", required=True)
+    schema_commands.add_parser("catalog", help="print the checked versioned resource inventory")
+    schema_show = schema_commands.add_parser("show", help="print exact packaged schema bytes")
+    schema_show.add_argument("name", help="schema ID name, not a file path or URL")
+    schema_export = schema_commands.add_parser(
+        "export", help="publish a canonical ZIP without replacement"
+    )
+    schema_export.add_argument("archive", type=Path)
+    schema_verify = schema_commands.add_parser(
+        "verify", help="verify the complete fixed schema ZIP"
+    )
+    schema_verify.add_argument("archive", type=Path)
+    schema_verify.add_argument("--expected-catalog-digest", required=True)
 
     evaluate_parser = subparsers.add_parser("evaluate", help="evaluate all evidence at one instant")
     evaluate_parser.add_argument("policy", type=Path, help="policy JSON file")
@@ -346,6 +369,19 @@ def _artifact_bundle(args: argparse.Namespace) -> None:
 def run(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "schema":
+            if args.schema_command == "catalog":
+                _emit("-", canonical_json(load_schema_catalog().to_dict()))
+            elif args.schema_command == "show":
+                _emit("-", schema_bytes(args.name).decode("utf-8"))
+            elif args.schema_command == "export":
+                _emit("-", canonical_json(export_schemas(args.archive).to_dict()))
+            else:
+                exported = verify_schema_archive(
+                    args.archive, expected_catalog_digest=args.expected_catalog_digest
+                )
+                _emit("-", canonical_json(exported.to_dict()))
+            return 0
         if args.command == "ledger-query":
             _ledger_query(args)
             return 0

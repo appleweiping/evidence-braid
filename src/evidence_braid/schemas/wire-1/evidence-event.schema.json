@@ -1,0 +1,6 @@
+{
+  "$id": "urn:evidence-braid:schemas:wire-1:evidence-event",
+  "$ref": "urn:evidence-braid:schemas:wire-1:common#/$defs/EvidenceEvent",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evidence Braid evidence-event structural wire profile"
+}

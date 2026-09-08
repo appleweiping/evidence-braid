@@ -78,6 +78,13 @@ real evidence. Archive validity is not actor authentication or proof of truth.
 
 ## Quick start
 
+For offline structural validation, the [versioned schema catalog](docs/offline-schemas.md)
+ships seven existing wire profiles and shared definitions in every wheel/sdist.
+`evidence-braid schema export schemas.zip` publishes a closed, checksummed ZIP
+without overwriting an existing path. Native authorized replay and externally
+anchored proof verification remain separate from JSON Schema acceptance.
+Run `python examples/offline_schemas.py` for a relocation/fresh-process example.
+
 For source/claim/time filtering and stable receipt pagination, see
 [anchored ledger queries](docs/ledger-query.md). `LedgerIndex` retains a verified
 historical prefix and rejects cursors for another head or query. Run
