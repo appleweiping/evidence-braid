@@ -7,6 +7,12 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Independent offline Node verification of complete canonical v1/v2 receipts and
+  selected Merkle members, preserving large integers, exact finite-float spelling,
+  Unicode scalar key order and original byte spans. Mandatory external anchors,
+  bounded native snapshots, semantic checks and frozen metadata accompany separate
+  hand-built tree, resource-bound and Python interoperability tests.
+
 - Fixed, bounded retained-artifact check plans with typed paths and scalar/byte
   predicates, immutable ordered results and canonical context commitments. A
   separate externally pinned workflow gate replays approvals and recomputes the

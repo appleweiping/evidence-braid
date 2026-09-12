@@ -108,6 +108,11 @@ hashes, exact receipt/position binding, canonical interchange and resource limit
 Run `python examples/ledger_membership.py` offline. Membership does not prove query
 completeness, authenticated identity, durable commit or append-only consistency.
 
+The [independent Node verifier](docs/node-membership.md) checks the same complete
+canonical receipts and selected proofs offline, including lossless large integers,
+Python float spelling and Unicode keys. Run `python examples/cross_runtime_membership.py`.
+Its externally anchored checks return frozen metadata, not a rounded event graph.
+
 To compare two retained snapshots without revealing their complete ledgers, use
 `prove_ledger_consistency` and `verify_ledger_consistency` with **both** independently
 retained commitment digests. The [append-consistency contract](docs/ledger-consistency.md)

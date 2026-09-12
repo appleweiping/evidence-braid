@@ -1,5 +1,11 @@
 # Independent Node.js consistency verification
 
+For **complete receipt and selected-member verification**, see
+[`ledger-membership.mjs`](ledger-membership.mjs) and the
+[separate exact-wire contract](../docs/node-membership.md). That verifier includes
+the private lossless numeric/UTF-8 readers and preserves the existing Python
+receipt domain. The consistency-only module described below remains unchanged.
+
 `ledger-consistency.mjs` is a dependency-free ES module for Node.js 22 or later.
 It verifies the same canonical two-anchor append-consistency envelope emitted
 by the Python API, using an independently implemented iterative bit/index

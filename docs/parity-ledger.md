@@ -364,3 +364,41 @@ These are local Windows full-suite and cross-version focused results, not a Linu
 full-suite or hosted-CI claim. Runtime dependencies, package version, existing
 schemas/goldens and CI policies remain unchanged. Whole-reference-repository parity
 is still open.
+
+## Independent receipt and membership increment
+
+The [Node receipt/member contract](node-membership.md) adds full selected receipt
+semantics to the earlier independent consistency-only verifier. Numeric values
+are not restricted to JavaScript safe integers or RFC 8785: the original parser
+retains 640-digit integers and checks the existing Python binary64 spelling using
+exact rounding intervals. Validated raw byte spans, not a lossy rewritten event,
+are hashed. Closed semantic fields, Unicode scalar ordering, exact tree routes
+and mandatory external anchors preserve the existing v1/v2 wire profile.
+
+Final-source Windows Python 3.14.5 full suite passed 1471 tests with the three
+existing symlink-privilege skips in 119.85 seconds (JUnit 1474 cases, zero failures
+or errors, 119.379 seconds). Runtime/ResourceWarning were errors and Node was
+required. The 142 source/document/configuration hashes were identical before
+and after the run. Combined Python coverage is 99.1584%: 4920/4950 statements
+and 1678/1704 branches, with the original 98% threshold and exclusions unchanged.
+All eleven new Python interoperability/oracle cases also passed Python 3.12.13
+with warnings as errors in 19.53 seconds. These include 20158 exact finite-float
+spelling vectors and a real 1000-member bundle.
+
+The final 22-test Node membership/numeric/byte suite passed with 99.43% lines,
+96.77% branches and 100% functions under 98/95/100 gates. The membership module
+is fully covered; remaining paths are the numeric algorithm's defensive terminal
+guard and native-copy exception conversion. Existing consistency tests passed
+unchanged (eight groups; 99.01% lines, 98.94% branches, 100% functions). Independent
+review caught repeated reads of caller expectedSequence; a changing-getter RED
+regression demonstrated the wrong context could be accepted, and capturing once
+fixed it before these final gates. No claim of a hostile options-object sandbox.
+
+Ruff lint/format (102 Python files), strict Mypy (33 runtime modules), Bandit,
+offline frozen lock (66 packages) and whitespace gates passed. Package and hosted
+results remain separate verification obligations until their actual completion.
+The prior consistency module, Python production source, dependency versions,
+catalog pins and golden wire bytes remain unchanged. This closes one cross-runtime
+verification gap, not the entire Itself/Ledger reference-repository gap. Live
+oracles, authentication, signatures, service/ecosystem breadth and the outstanding
+whole-repository acceptance inventory remain open.

@@ -52,6 +52,9 @@ packages = ["src/evidence_braid"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "verification/ledger-consistency.mjs" = "evidence_braid/verification/ledger-consistency.mjs"
+"verification/ledger-membership.mjs" = "evidence_braid/verification/ledger-membership.mjs"
+"verification/receipt-wire.mjs" = "evidence_braid/verification/receipt-wire.mjs"
+"verification/receipt-numbers.mjs" = "evidence_braid/verification/receipt-numbers.mjs"
 
 [tool.hatch.build.targets.sdist]
 include = [
