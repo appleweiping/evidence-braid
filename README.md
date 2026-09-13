@@ -44,6 +44,10 @@ standalone operator report is [`examples/decision.html`](examples/decision.html)
 
 The package has no runtime dependencies and supports Python 3.11 or newer.
 
+The [local durable-workflow commands](docs/workflow-store-cli.md) provide exclusive
+creation, anchored reads/export, externally bound appends and historical recovery.
+Run `python examples/workflow_store_cli.py` for an actual subprocess demonstration.
+
 The optional [retained-artifact check gate](docs/claim-checks.md) evaluates five fixed
 predicates against actual committed bytes and separately requires replayed approval.
 It never trusts a producer's `passed` flag or a serialized `accepted` result. Run

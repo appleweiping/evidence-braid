@@ -45,6 +45,7 @@ from .schema_catalog import (
 from .schema_directory import export_schema_directory, verify_schema_directory
 from .storage import MAX_LEDGER_BYTES, SQLiteLedger, load_ledger
 from .workflow import MAX_WORKFLOW_BYTES, WorkflowBundle, load_workflow_bundle, replay_workflow
+from .workflow_store_cli import run as run_workflow_store
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -54,6 +55,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers.add_parser("workflow-store", help="anchored local durable authority workflows")
 
     checks_parser = subparsers.add_parser(
         "checks", help="fixed predicates over retained artifact bytes"
@@ -485,6 +487,9 @@ def _checks(args: argparse.Namespace) -> int:
 
 
 def run(argv: Sequence[str] | None = None) -> int:
+    supplied = sys.argv[1:] if argv is None else argv
+    if supplied and supplied[0] == "workflow-store":
+        return run_workflow_store(supplied[1:])
     args = _parser().parse_args(argv)
     try:
         if args.command == "checks":

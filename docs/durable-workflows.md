@@ -2,7 +2,8 @@
 
 `SQLiteWorkflowStore` persists the existing authority-checked workflow lifecycle
 with explicit compare-and-append and durable request identity. It is a local
-Python core API, not an HTTP service or a new CLI. It needs no server or added
+Python core API, also exposed through [explicit local commands](workflow-store-cli.md),
+not an HTTP service. It needs no server or added
 runtime dependency. The existing workflow, evidence v1/v2, artifact and scoring
 formats and meanings are unchanged.
 

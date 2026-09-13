@@ -7,6 +7,12 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Six explicit local durable-workflow commands with mandatory authority/context,
+  exact checkpoint and request-digest binding, bounded strict file/JSON admission,
+  checked result delivery and truthful post-commit recovery outcomes. Includes an
+  offline real subprocess example; existing core transactions and wire formats
+  are unchanged.
+
 - Local authority-workflow persistence with complete-checkpoint compare-and-append,
   atomic receipt/request journaling, exact historical idempotent retries and
   externally bound recovery after uncertain commit acknowledgement. Mandatory

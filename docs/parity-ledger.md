@@ -471,3 +471,42 @@ byte-audited. Final acceptance prose was added after tests; runtime/tests remain
 unchanged and distributions were rebuilt and re-audited. Hosted results are
 separate exact-head obligations. CLI, service/authentication, policy evolution,
 broader lifecycle/integrations and entire frozen-reference equivalence remain open.
+
+## Local durable-workflow CLI acceptance (2026-09-12)
+
+The [six-command local workflow interface](workflow-store-cli.md) now integrates
+exclusive creation, anchored snapshot/export, explicit request digest, append and
+historical lookup with the existing durable core. It does not change authority,
+transaction or portable wire semantics. Commands require separately supplied
+trust inputs; actor identity remains an unsigned declaration, not authentication.
+
+Final Windows CPython3.14.5 full verification passed **1,871 tests**, with five
+real symbolic-link privilege skips, in **140.25s**. All152 delivery-file hashes
+were unchanged across the run. Whole-package branch+statement coverage was
+**99.2352%** (5,613/5,644 statements and1,913/1,940 branches), retaining the98%
+gate and existing exclusions. The new CLI covered214/214 statements and76/76
+branches, with no exclusions.
+
+A separate, fresh, cached-only Linux CPython3.12.3 installed-wheel environment
+passed **669 selected CLI/workflow/storage/schema tests and independent probes**,
+without skips/failures, in **78.37s**. All five real symlink cases ran there. This
+is not a full Linux suite claim. All50 installed payload/resource files matched
+the wheel and frozen source;152 delivery files,1,166 runtime files and the prior
+Evidence/Payload environments remained unchanged. Loaded modules and isolated
+children resolved to the new installed wheel, not the source tree.
+
+Independent review retained actual RED/GREEN evidence for native Windows stdout
+encoding/newline translation and historical-lookup acknowledgement. Native output
+now explicitly writes UTF-8 bytes plus LF; found lookup remains complete through
+delivery failure, while absent lookup is none and interrupted unreturned request
+acknowledgement is conservatively unknown. Root also retained premature-file-EOF
+and commit-control regressions. No existing persistence code was changed.
+
+Whole Ruff/format, strict Mypy, Bandit, offline frozen synchronization, sdist-to-wheel
+build, strict Twine and wheel-content checks passed. A separate dependency-free
+Windows3.14.5 wheel installation ran the actual subprocess example under both-I
+and-I/-O. The complete50-runtime/4-metadata/143-sdist-source byte audit passed
+before this final acceptance prose; distributions are rebuilt/re-audited after it.
+Hosted checks remain exact-head obligations, not inferred from local execution.
+Service/authentication, policy evolution, broader integrations and every remaining
+whole-reference row remain open. This CLI does not complete repository parity.
