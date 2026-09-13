@@ -32,7 +32,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 |---|---|---|
 | Immutable typed evidence and strict inputs (`itself/records.py`, `validation.py`) | `models.py`, plus new `authority.py` actor/grant/transition/artifact types | Partial: typed scoped authority and procedural claim records now exist; generalized hypotheses, predictions, test plans and richer epistemic records remain open. |
 | Evidence-backed authorized transitions (`itself/state.py`, bundle conformance fixtures) | New `workflow.py`: exact-scope roles, immutable claim lifecycle, independent review/revocation, per-claim revisions and hand-authored conformance cases | Implemented bounded original procedural slice; richer epistemic states, context migration, lifecycle policy evolution and upstream protocol conformance remain open. |
-| Durable append-only history (`itself/ledger.py`, `ledger_agent/db.py`) | New `storage.py`; transactions, separate-process reopen/append, rollback/crash tests | Implemented bounded local slice; full reference backend behavior including Postgres and remote ingestion remains open. |
+| Durable append-only history (`itself/ledger.py`, `ledger_agent/db.py`) | `storage.py` for evidence; new `workflow_storage.py` for authority-checked full-checkpoint CAS, atomic batches, exact historical request recovery and an independently audited operation journal | Bounded original local slices; the new core awaits independent/full/platform acceptance. Whole reference backend behavior, Postgres and remote ingestion remain open. |
 | Strict portable hash receipts (`itself/receipts.py`, `ledger_agent/receipts.py`) | `ledger.py` v1 reader/v2 chain plus authority/evidence/manifest-bound workflow envelopes | Partial: strict offline workflow replay and authority/action binding now exist; minimized reasoning disclosures and external attestations remain open. |
 | Graph/reference provenance (`itself/bundle.py`, `ledger_agent/tool_receipts.py`) | `provenance.py` links plus workflow evidence/claim/scope checks and artifact content commitments | Partial: artifact references now have content bindings and unresolved-reference rejection; execution/tool lineage and artifact custody remain open. |
 | Closed artifact bundle publication (`itself/evidence_bundle.py`) | `artifacts.py`: closed canonical content-addressed ZIP32, streamed object digests, exact inventory, no-replace atomic publication and externally anchored replay | Implemented bounded original local profile; not upstream directory/wire equivalence. Authenticated custody, signatures and external artifact-store integrations remain open. |
@@ -56,6 +56,32 @@ be closed, including deployment and optional integration surfaces. Source line
 counts, large parameterized test totals and matching capability labels do not
 substitute for those outcomes. This increment closes persistence defects and
 adds a durable local slice; it does not close this ledger.
+
+## Durable authority-workflow core increment (2026-09-12)
+
+The [local durable workflow contract](durable-workflows.md) now addresses the
+previous concurrent workflow-publication gap at the Python core boundary:
+independently mandatory authority/context, full workflow-and-operation CAS,
+atomic whole-batch permission/revision/reference admission, retained idempotency,
+and truthful none/unknown/complete commit outcomes. The separate operation journal
+reconstructs request digests from disjoint existing receipt ranges rather than
+duplicating each request. Existing lifecycle, evidence v1/v2, and portable bundle
+formats are unchanged. Services, authentication, policy/context migration,
+deployment, reference-backend conformance and whole-repository parity stay open.
+
+Comparison scope remains frozen at the commits listed above. The exact Itself
+`itself/ledger.py` supports validated in-memory batch extension/logical persistence;
+this is not evidence for its own concurrent CAS semantics. The frozen Perseus
+`ledger_agent/db.py` is recorded in the inventory (Git blob
+`120e54d1723409fa79aa89ddd6c40a0a44e7e442`; SHA-256
+`e13a9ed27a071cf3e195cd4210cc26d90047307cc7470704bfee29d17634d7f3`), but exact-source
+retrieval currently returns HTTP 404 and the inventory's temporary archives are
+not retained. This increment makes no new implementation claim about that missing
+file and substitutes no unfrozen source. The runtime design is original.
+
+Focused acceptance and the executable example are recorded separately from the
+required independent review, full suite, platform/package gates and publication.
+None of those broader gates is claimed by this core-only working increment.
 
 ## Local verification of this increment
 
@@ -402,3 +428,46 @@ catalog pins and golden wire bytes remain unchanged. This closes one cross-runti
 verification gap, not the entire Itself/Ledger reference-repository gap. Live
 oracles, authentication, signatures, service/ecosystem breadth and the outstanding
 whole-repository acceptance inventory remain open.
+
+## Durable authority-workflow acceptance
+
+The [local durable workflow core](durable-workflows.md) persists existing workflow
+receipts with complete-checkpoint compare-and-append and atomic request identity.
+Identical retries recover their exact historical prefix; changed intent or stale
+new requests conflict. Every operation replays bounded current history under a
+separately supplied authority/context. Unknown commit acknowledgement never
+becomes a claimed rollback. Existing portable workflow/evidence wires are unchanged.
+
+Windows CPython 3.14.5 full-suite acceptance passed **1709 tests**, with four real
+symlink-privilege skips, in **114.14s**. Combined coverage was **99.2041%**
+(5394/5425 statements, 1835/1862 branches), above the unchanged 98% gate.
+ResourceWarning and RuntimeWarning were errors; all 146 delivery file hashes
+were identical before/after the run. The new core has 473/474 statements and
+157/158 branches covered (**99.68%**), with no new exclusions.
+
+Independent Linux CPython 3.12.3 / SQLite 3.45.1 installed-wheel verification
+passed **489 focused workflow/storage/schema-directory cases**, without failures
+or skips, in **30.53s**. All four real symlink cases executed there. All 49
+installed runtime/resource files matched source before/after, 89 source/test/
+configuration/verification files remained stable, and 33 imported modules plus
+actual isolated child processes resolved to the dedicated installed package.
+The initial source-only Linux harness lacked this package in isolated children
+and recorded 487 passes/two import failures; that historical environment result
+was retained separately, then corrected with the verified installed environment.
+This is not a full Linux suite claim.
+
+Independent review retained actual RED/GREEN regressions for control-exception
+priority, unacknowledged setup closure and unknown file identity authorizing
+foreign cleanup. The final implementation preserves original controls, retains
+uncertain ownership and rejects unavailable stable identities. Real competing
+writers, precommit process death, uncertain/complete commit recovery and independent
+direct-sqlite3 hash/range audits are part of the focused tests.
+
+Whole-repository Ruff/format, strict Mypy (34 modules), Bandit, offline frozen
+environment synchronization, sdist-to-wheel build, strict Twine and wheel-content
+checks passed. A fresh isolated Python 3.14.5 wheel executed the actual offline
+workflow example with -I. All runtime resources and sdist source entries were
+byte-audited. Final acceptance prose was added after tests; runtime/tests remained
+unchanged and distributions were rebuilt and re-audited. Hosted results are
+separate exact-head obligations. CLI, service/authentication, policy evolution,
+broader lifecycle/integrations and entire frozen-reference equivalence remain open.

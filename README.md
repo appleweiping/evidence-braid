@@ -73,6 +73,13 @@ your own trusted policy and exported workflow. Actor names are declarations,
 Retain workflow heads independently to detect replacement or rollback. This
 layer does not change existing scoring behavior or encode actions as evidence.
 
+The optional [durable workflow core](docs/durable-workflows.md) adds SQLite
+compare-and-append with mandatory full checkpoints, atomic authority-checked
+batches and request-ID recovery of exact historical commits. Run
+`python examples/durable_workflow.py` for an isolated executable demonstration.
+It remains a local Python API; context hashes and actor names do not authenticate
+writers or prevent rollback without independently retained checkpoints.
+
 ## Closed artifact exchange
 
 `build_artifact_bundle` packages the actual bytes referenced by a workflow into

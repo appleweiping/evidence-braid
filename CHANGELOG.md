@@ -7,6 +7,13 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Local authority-workflow persistence with complete-checkpoint compare-and-append,
+  atomic receipt/request journaling, exact historical idempotent retries and
+  externally bound recovery after uncertain commit acknowledgement. Mandatory
+  authority/context, bounded replay, exclusive creation and identity-owned cleanup
+  preserve existing portable workflow and evidence formats. Includes an offline
+  example, independent SQLite audits and real competing/crashed writer tests.
+
 - Independent offline Node verification of complete canonical v1/v2 receipts and
   selected Merkle members, preserving large integers, exact finite-float spelling,
   Unicode scalar key order and original byte spans. Mandatory external anchors,
