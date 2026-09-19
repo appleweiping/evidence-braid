@@ -1,5 +1,10 @@
 """Evidence Braid public API."""
 
+from ._workflow_service_wire import (
+    PreparedWorkflowAppend,
+    WorkflowServiceError,
+    WorkflowServiceLimits,
+)
 from .artifacts import (
     ArtifactBundleLimits,
     VerifiedArtifactBundle,
@@ -89,6 +94,8 @@ from .workflow import (
     replay_workflow,
     write_workflow_bundle,
 )
+from .workflow_client import WorkflowClient
+from .workflow_service import LocalWorkflowService, WorkflowServiceCredential
 from .workflow_storage import (
     SQLiteWorkflowStore,
     StoredWorkflow,
@@ -140,9 +147,11 @@ __all__ = [
     "LedgerProofIndex",
     "LedgerQuery",
     "LedgerSelection",
+    "LocalWorkflowService",
     "Modality",
     "Outcome",
     "Policy",
+    "PreparedWorkflowAppend",
     "ProvenanceEdge",
     "ProvenanceGraph",
     "ProvenanceNode",
@@ -165,9 +174,13 @@ __all__ = [
     "WorkflowActor",
     "WorkflowBundle",
     "WorkflowCheckpoint",
+    "WorkflowClient",
     "WorkflowCommit",
     "WorkflowConflictError",
     "WorkflowReceipt",
+    "WorkflowServiceCredential",
+    "WorkflowServiceError",
+    "WorkflowServiceLimits",
     "WorkflowState",
     "WorkflowStorageError",
     "WorkflowStoreLimits",

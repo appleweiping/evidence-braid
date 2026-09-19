@@ -7,6 +7,13 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Authenticated loopback-only service and synchronous Python SDK for one pinned,
+  existing workflow, with explicit actor binding, whole-workflow read/act access,
+  bounded strict HTTP/JSON, immutable prepared intent and historical CAS recovery.
+  Single-owner cleanup preserves uncertain/complete acknowledgements. Includes
+  a real offline loopback example; old core/CLI wires are unchanged. Public
+  deployment, hosted/MCP service and richer lifecycle remain open.
+
 - Six explicit local durable-workflow commands with mandatory authority/context,
   exact checkpoint and request-digest binding, bounded strict file/JSON admission,
   checked result delivery and truthful post-commit recovery outcomes. Includes an

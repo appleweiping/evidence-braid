@@ -16,8 +16,15 @@ reasonable remediation window before public disclosure.
 
 ## Deployment guidance
 
-Evidence Braid does not provide authentication, authorization, storage,
-signatures, or rate limiting. Deploying applications must supply those controls.
+The optional local workflow core provides procedural authorization and durable
+storage. Its [loopback service](docs/local-workflow-service.md) adds explicit
+credential-to-actor binding, full-workflow read/act access and bounded request,
+concurrency and rate admission. These are limited local controls, not an identity
+provider, cryptographic server authentication, origin signature or public
+deployment framework. Tokens and endpoint distribution are trusted operator
+inputs; every credential discloses the entire workflow. Do not expose the
+plaintext listener through a proxy or tunnel. Applications must supply controls
+outside that documented threat boundary.
 Treat policies and evidence as untrusted input, cap file and line sizes before
 calling the library, retain immutable originals when auditability matters, and
 serve generated reports with an appropriate Content Security Policy.

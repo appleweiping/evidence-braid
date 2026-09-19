@@ -48,6 +48,12 @@ The [local durable-workflow commands](docs/workflow-store-cli.md) provide exclus
 creation, anchored reads/export, externally bound appends and historical recovery.
 Run `python examples/workflow_store_cli.py` for an actual subprocess demonstration.
 
+An optional [authenticated local workflow service and synchronous SDK](docs/local-workflow-service.md)
+bind explicit credentials to configured actors over a bounded `127.0.0.1` listener.
+It preserves durable CAS and acknowledgement recovery; every credential discloses
+the complete pinned workflow. This is not a public deployment or identity provider.
+Run `python examples/local_workflow_service.py` for the actual offline loopback example.
+
 The optional [retained-artifact check gate](docs/claim-checks.md) evaluates five fixed
 predicates against actual committed bytes and separately requires replayed approval.
 It never trusts a producer's `passed` flag or a serialized `accepted` result. Run

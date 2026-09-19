@@ -40,7 +40,7 @@ engine covers a useful subset of these behaviors; the full surface is broader.
 | External inference/check boundary (`itself/inference.py`, `records.py`, `bundle.py`; `ledger_agent/campaigns.py`) | `checks.py` fixed retained-byte predicates and `check_workflow.py` separately pinned recomputation/approval gate | Partial original deterministic slice: explicit ordered plans/results, actual retained bytes and authority lifecycle binding; live oracle adapters, arbitrary programs, inference request/response and richer epistemic protocols remain open. |
 | Persistent query and pagination (`ledger_agent/server/api.py`, `test_export_pagination.py`) | `query.py` head-anchored indexes, exact field/time filters, reusable bounded pages and old-prefix reopening from SQLite snapshots | Partial original local retrieval: persistent secondary indexes, authenticated exports, richer expressions/proofs and reference workload comparisons remain open. |
 | Detached membership and external commitment (`ledger_agent` continuous-attestation/evidence-receipts contracts) | `membership.py`: selected receipt membership; `consistency.py`: compact two-anchor prefix proofs; `verification/ledger-consistency.mjs`: independent Node bit/index verification of the closed append-proof profile | Partial original proof profile: signed/witnessed heads, hidden new chain-link verification, nonmembership/query-completeness proofs, cross-language receipt/selected-membership verification and broader conformance remain open. |
-| HTTP/SDK/MCP service (`ledger_agent/server/`, `mcp_server.py`, `client.py`) | Local Python API and CLI | Open: service protocol, authentication/tenant boundaries, request limits, idempotency, health and contract tests. |
+| HTTP/SDK/MCP service (`ledger_agent/server/`, `mcp_server.py`, `client.py`) | Original pinned loopback workflow service + synchronous SDK | Partial: actor binding, full-workflow disclosure, bounded HTTP/JSON, CAS/recovery and owned cleanup. Hosted/MCP/multi-tenant/public deployment and exact reference-backend conformance remain open. |
 | Attestation and independent witness (`ledger_agent/witness.py`, `continuous-attestation.md`) | Optional caller-retained head comparison | Open: signed/witnessed checkpoints, key lifecycle and externally tested replacement/rollback threat model. |
 | Governance/receipts/OSCAL projections (`ledger_agent/context_release.py`, `oscal.py`, `composition.py`) | Existing policy/report mechanics | Open: recorded authority/action/result provenance, policy-bound disclosure, schema-validated projection and compound action receipts. |
 | Resource attribution/reconciliation (`ledger_agent/metering.py`, `reconcile*.py`, optional billing) | No equivalent yet | Open under whole-repository scope: explicit resource records, cost rules, reconciliation and optional adapter contracts. |
@@ -510,3 +510,45 @@ before this final acceptance prose; distributions are rebuilt/re-audited after i
 Hosted checks remain exact-head obligations, not inferred from local execution.
 Service/authentication, policy evolution, broader integrations and every remaining
 whole-reference row remain open. This CLI does not complete repository parity.
+
+## Original authenticated local workflow service acceptance (2026-09-12)
+
+The [bounded loopback service and synchronous SDK](local-workflow-service.md)
+authenticate configured actors for one existing pinned workflow. They preserve
+old durable transactions and portable wires while adding exact actor binding,
+whole-workflow read/act access, bounded HTTP/JSON, actor-scoped request identity,
+explicit prepared-intent recovery and retained cleanup ownership. The
+[offline example](../examples/local_workflow_service.py) uses real ephemeral
+loopback sockets and compares full receipt/operation rows with independent formulas.
+
+The final Windows CPython 3.14.5 full suite passed **2,246 tests**, with five
+existing symbolic-link privilege skips, in **195.38s**. Whole-package statement
+and branch coverage was **98.9193%** (6,600/6,656 statements and 2,279/2,320
+branches), above the unchanged 98% gate. Node verification was required by that
+run. All 167 tracked or nonignored new delivery files had identical hashes
+before and after the full suite. The service handoff regression was first observed
+as seven failures in the original nine-case independent matrix, then repaired;
+the final shipped 46-case handoff matrix and original nine cases passed together.
+
+A rebuilt wheel was installed in separate Windows CPython 3.14.5 and Linux
+CPython 3.12.3 environments without network downloads. Each installed environment
+collected 824 selected service, client, authority, workflow, storage, CLI and
+independent handoff cases. Windows passed 823 with one existing symbolic-link
+privilege skip in **164.75s**; Linux passed all 824 with no skips in **156.11s**.
+Both environments ran the real loopback example under normal and optimized Python,
+resolved all 37 loaded product modules from the installed wheel, and passed
+source, installed payload, environment and distribution byte audits before and
+after tests. These selected runs are not full Linux-suite or full installed-suite
+coverage claims. Full-suite coverage above is from the Windows source run.
+
+Whole Ruff lint and format, strict Mypy across 38 source files, Bandit and
+whitespace checks passed after the handoff repair. Final distribution audits and
+hosted checks are separate publication gates; their results must be recorded
+against the final committed bytes.
+
+This original lane is not equivalence to frozen service implementations. The
+pinned Ledger README's client/service declarations were retrieved; exact pinned
+client/server/auth/API-doc bodies were unavailable and remain unverified here.
+Public deployment, MCP, hosted ingestion, scope-redacted views, identity
+attestation, richer epistemic lifecycle and all other whole-repository gaps stay
+open.
