@@ -25,6 +25,13 @@ deployment framework. Tokens and endpoint distribution are trusted operator
 inputs; every credential discloses the entire workflow. Do not expose the
 plaintext listener through a proxy or tunnel. Applications must supply controls
 outside that documented threat boundary.
+The [epistemic case core](docs/epistemic-case-core.md) validates declarations,
+hashes, authority and history order only. It does not run the named observation
+adapter, authenticate actors, validate retained observation bytes or prove a
+claim true. Do not equate its `SUPPORTED` digest match with verified external
+execution. Its machine comparison binds an explicit exact UTF-8 expected value,
+but cannot prove that explanatory prediction prose describes that value.
+Retain plan heads independently if precommitment matters.
 Treat policies and evidence as untrusted input, cap file and line sizes before
 calling the library, retain immutable originals when auditability matters, and
 serve generated reports with an appropriate Content Security Policy.

@@ -7,6 +7,12 @@ Versioning once the first stable release is published.
 
 ### Added
 
+- Original bounded epistemic case core with separately scoped proposer,
+  observer, evaluator and decider roles; versioned immutable plan, observation,
+  verdict and decision records; canonical hash-linked journal and deterministic
+  replay. It does not yet execute external observations, persist the case or
+  alter legacy workflow approval semantics.
+
 - Authenticated loopback-only service and synchronous Python SDK for one pinned,
   existing workflow, with explicit actor binding, whole-workflow read/act access,
   bounded strict HTTP/JSON, immutable prepared intent and historical CAS recovery.

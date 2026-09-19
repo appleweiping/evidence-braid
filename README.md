@@ -60,6 +60,12 @@ It never trusts a producer's `passed` flag or a serialized `accepted` result. Ru
 `python examples/offline_claim_checks.py new-check-demo` for an executable offline
 plan, retained inputs, review workflow and closed artifact bundle.
 
+The separate [epistemic case core](docs/epistemic-case-core.md) records a
+predeclared prediction, declared observation, deterministic digest-comparison
+verdict and accountable decision with exact-scope replay. Its Stage A journal
+does **not** execute a test or verify that any observation bytes exist; do not
+use its supported state alone as an autonomous approval gate.
+
 The fixed offline schema catalog can also be [published as an atomic directory](docs/schema-directory.md)
 on supported Windows/Linux filesystems, with no-replace semantics, bounded complete verification
 and explicit ownership/acknowledgement failures. Its existing ZIP format is unchanged.
