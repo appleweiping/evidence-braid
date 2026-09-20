@@ -372,20 +372,28 @@ def _schema(connection: sqlite3.Connection) -> None:
 
 
 def _admit(connection: sqlite3.Connection, table: str, count: int, item: int, total: int) -> None:
-    if table not in {
-        "case_context",
-        "case_receipts",
-        "case_payloads",
-        "case_operations",
-        "case_meta",
-    }:
-        raise AssertionError("internal table name")
-    column = "content" if table == "case_payloads" else "document"
-    row = connection.execute(
-        f"SELECT count(*),coalesce(sum(length({column})),0),"
-        f"coalesce(max(length({column})),0),"
-        f"coalesce(sum(typeof({column})!='blob'),0) FROM {table}"
-    ).fetchone()
+    queries = {
+        "case_context": "SELECT count(*),coalesce(sum(length(document)),0),"
+        "coalesce(max(length(document)),0),coalesce(sum(typeof(document)!='blob'),0) "
+        "FROM case_context",
+        "case_receipts": "SELECT count(*),coalesce(sum(length(document)),0),"
+        "coalesce(max(length(document)),0),coalesce(sum(typeof(document)!='blob'),0) "
+        "FROM case_receipts",
+        "case_payloads": "SELECT count(*),coalesce(sum(length(content)),0),"
+        "coalesce(max(length(content)),0),coalesce(sum(typeof(content)!='blob'),0) "
+        "FROM case_payloads",
+        "case_operations": "SELECT count(*),coalesce(sum(length(document)),0),"
+        "coalesce(max(length(document)),0),coalesce(sum(typeof(document)!='blob'),0) "
+        "FROM case_operations",
+        "case_meta": "SELECT count(*),coalesce(sum(length(document)),0),"
+        "coalesce(max(length(document)),0),coalesce(sum(typeof(document)!='blob'),0) "
+        "FROM case_meta",
+    }
+    try:
+        query = queries[table]
+    except KeyError as error:
+        raise AssertionError("internal table name") from error
+    row = connection.execute(query).fetchone()
     if row[0] > count or row[1] > total or row[2] > item or row[3]:
         raise ValidationError("case store table exceeds closed BLOB bounds")
 
