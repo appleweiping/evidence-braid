@@ -118,6 +118,13 @@ source attachment and verifies the moved archive. See
 [format, CLI, limits and privacy](docs/closed-artifacts.md) before exchanging
 real evidence. Archive validity is not actor authentication or proof of truth.
 
+For one durable epistemic case, `verify_supported_case_bundle` additionally
+checks the archived journal and retained assertion/input/output bytes against
+independent case, workflow and evidence heads. It requires a currently approved
+workflow claim that binds all four case objects; procedural approval alone is
+not support. Run `python -m evidence_braid.examples.portable_case_bundle` and
+see [the exact supported-case profile](docs/portable-supported-cases.md).
+
 ## Quick start
 
 For offline structural validation, the [versioned schema catalog](docs/offline-schemas.md)

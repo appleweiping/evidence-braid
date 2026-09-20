@@ -241,6 +241,83 @@ def test_duplicate_registry_and_limits_rejected():
         )
 
 
+def test_trusted_registry_and_intent_type_admission_never_enters_adapter_early():
+    calls = []
+
+    def adapter(raw: bytes) -> bytes:
+        calls.append(raw)
+        return b"revision-B"
+
+    authority, plan, journal = case()
+    with pytest.raises(ValidationError, match="trusted callable"):
+        api.ObservationAdapter("cache-bypass", "fixture-cache", "1", "observer", object())
+    admitted = api.ObservationAdapter("cache-bypass", "fixture-cache", "1", "observer", adapter)
+    with pytest.raises(ValidationError, match="immutable adapter entries"):
+        api.ObservationRegistry(())
+    with pytest.raises(ValidationError, match="exact ObservationLimits"):
+        api.ObservationRegistry((admitted,), limits={})
+    selected = api.ObservationRegistry((admitted,))
+    with pytest.raises(AttributeError, match="cannot be replaced"):
+        selected._entries = ()
+    with pytest.raises(ValidationError, match="requires plan and authority"):
+        selected.select(plan, {})
+    with pytest.raises(ValidationError, match="trusted registry"):
+        api.prepare_observation(
+            journal,
+            authority,
+            {},
+            ASSERTION,
+            INPUT,
+            expected_plan_head=journal.head_digest,
+            request_id="request-1",
+        )
+    with pytest.raises(ValidationError, match="prepared intent and registry"):
+        api.run_observation(object(), registry=selected)
+    intent = api.prepare_observation(
+        journal,
+        authority,
+        selected,
+        ASSERTION,
+        INPUT,
+        expected_plan_head=journal.head_digest,
+        request_id="request-1",
+    )
+    with pytest.raises(ValidationError, match="exact token"):
+        api.run_observation(intent, registry=selected, cancel={})
+    assert calls == []
+    retained = api.run_observation(intent, registry=selected)
+    assert calls == [INPUT]
+    with pytest.raises(ValidationError, match="one-record planned journal"):
+        api.prepare_observation(
+            retained.journal,
+            authority,
+            selected,
+            ASSERTION,
+            INPUT,
+            expected_plan_head=retained.journal.head_digest,
+            request_id="request-2",
+        )
+    with pytest.raises(ValidationError, match="retained observation bytes"):
+        api.verify_observed_bytes(
+            retained.journal,
+            authority,
+            {},
+            expected_plan_head=journal.head_digest,
+            expected_observation_head=retained.journal.head_digest,
+            evaluator_id="evaluator",
+        )
+    with pytest.raises(ValidationError, match="one recorded observation"):
+        api.verify_observed_bytes(
+            journal,
+            authority,
+            retained,
+            expected_plan_head=journal.head_digest,
+            expected_observation_head=journal.head_digest,
+            evaluator_id="evaluator",
+        )
+    assert calls == [INPUT]
+
+
 def test_forged_retention_and_wrong_anchor_never_support():
     authority, _, journal, selected, intent = prepared(lambda _: b"revision-B")
     retained = api.run_observation(intent, registry=selected)

@@ -18,10 +18,17 @@ from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import IO, Any, BinaryIO, Protocol, TypeVar
+from typing import IO, Any, BinaryIO, Protocol, TypeVar, cast
 
 from ._atomic import staged_output
 from .authority import ArtifactReference, AuthorityPolicy, _integer
+from .epistemic_case import (
+    CaseAuthority,
+    CaseJournal,
+    CaseObservation,
+    CaseObservationStatus,
+    CasePlan,
+)
 from .errors import InputFormatError, ValidationError
 from .io import _loads, canonical_json
 from .ledger import _hash
@@ -411,7 +418,7 @@ def _preflight(
     return _ArchiveView(handle, cd_offset, central_raw + end_raw), entries
 
 
-def verify_artifact_bundle(
+def _verify_artifact_bundle_internal(
     path: str | Path,
     *,
     authority: AuthorityPolicy,
@@ -419,7 +426,10 @@ def verify_artifact_bundle(
     expected_evidence_head: str,
     expected_bundle_digest: str | None = None,
     limits: ArtifactBundleLimits | None = None,
-) -> VerifiedArtifactBundle:
+    case_journal_artifact_id: str | None = None,
+    case_authority: CaseAuthority | None = None,
+    expected_case_head: str | None = None,
+) -> tuple[VerifiedArtifactBundle, CaseJournal | None, dict[str, bytes]]:
     """Verify every byte and replay using independently supplied policy/head anchors.
 
     Reads metadata into bounded memory, streams all artifact bytes, extracts
@@ -454,6 +464,55 @@ def verify_artifact_bundle(
                 ):
                     raise ValidationError("stored state differs from independent workflow replay")
                 objects = _objects(workflow, config)
+                case_journal: CaseJournal | None = None
+                captured: dict[str, bytes] = {}
+                capture_refs: dict[str, ArtifactReference] = {}
+                if case_journal_artifact_id is not None:
+                    if case_authority is None or expected_case_head is None:
+                        raise ValidationError("case archive anchors are required")
+                    references = {ref.artifact_id: ref for ref in workflow.artifacts}
+                    journal_ref = references.get(case_journal_artifact_id)
+                    if (
+                        journal_ref is None
+                        or journal_ref.size_bytes > 2 * 1024 * 1024
+                        or "objects/" + journal_ref.sha256 not in entries
+                    ):
+                        raise ValidationError("case journal artifact is missing or oversized")
+                    with _closing(archive.open("objects/" + journal_ref.sha256)) as member:
+                        journal_raw = member.read(journal_ref.size_bytes + 1)
+                    if not journal_ref.matches(journal_raw):
+                        raise ValidationError("case journal artifact bytes differ")
+                    case_journal = CaseJournal.from_bytes(
+                        journal_raw, authority=case_authority, expected_head=expected_case_head
+                    )
+                    if (
+                        len(case_journal.receipts) != 3
+                        or type(case_journal.receipts[0].record) is not CasePlan
+                        or type(case_journal.receipts[1].record) is not CaseObservation
+                        or case_journal.receipts[1].record.status
+                        is not CaseObservationStatus.OBSERVED
+                    ):
+                        raise ValidationError("case archive requires an observed three-record case")
+                    plan = case_journal.receipts[0].record
+                    observation = case_journal.receipts[1].record
+                    required_ids = (
+                        case_journal_artifact_id,
+                        plan.assertion_artifact_id,
+                        plan.input_artifact_id,
+                        observation.artifact_id,
+                    )
+                    if None in required_ids or len(set(required_ids)) != 4:
+                        raise ValidationError("case archive artifact identities overlap")
+                    for identifier, maximum in zip(
+                        required_ids,
+                        (2 * 1024 * 1024, 64 * 1024, 256 * 1024, 4096),
+                        strict=True,
+                    ):
+                        reference = references.get(cast(str, identifier))
+                        if reference is None or reference.size_bytes > maximum:
+                            raise ValidationError("case archive artifact is missing or oversized")
+                        capture_refs[cast(str, identifier)] = reference
+                    captured[case_journal_artifact_id] = journal_raw
                 expected_manifest = _manifest(
                     workflow, raw["workflow.json"], raw["state.json"], objects
                 )
@@ -474,11 +533,22 @@ def verify_artifact_bundle(
                     if entries[name] != size:
                         raise ValidationError("object size differs from artifact commitment")
                     observed = hashlib.sha256()
+                    payload = (
+                        bytearray()
+                        if any(ref.sha256 == digest for ref in capture_refs.values())
+                        else None
+                    )
                     with _closing(archive.open(name)) as member:
                         while chunk := member.read(_CHUNK):
                             observed.update(chunk)
+                            if payload is not None:
+                                payload.extend(chunk)
                     if observed.hexdigest() != digest:
                         raise ValidationError("object bytes differ from artifact commitment")
+                    if payload is not None:
+                        for identifier, reference in capture_refs.items():
+                            if reference.sha256 == digest:
+                                captured[identifier] = bytes(payload)
                 if (
                     expected_bundle_digest is not None
                     and manifest["bundle_digest"] != expected_bundle_digest
@@ -488,7 +558,7 @@ def verify_artifact_bundle(
                 source.stat()
             ):
                 raise InputFormatError("archive changed during verification")
-            return VerifiedArtifactBundle(
+            verified = VerifiedArtifactBundle(
                 manifest["bundle_digest"],
                 workflow,
                 state,
@@ -496,8 +566,30 @@ def verify_artifact_bundle(
                 sum(objects.values()),
                 before[2],
             )
+            return verified, case_journal, captured
     except (OSError, zipfile.BadZipFile) as exc:
         raise InputFormatError("cannot read or verify artifact archive") from exc
+
+
+def verify_artifact_bundle(
+    path: str | Path,
+    *,
+    authority: AuthorityPolicy,
+    expected_head: str,
+    expected_evidence_head: str,
+    expected_bundle_digest: str | None = None,
+    limits: ArtifactBundleLimits | None = None,
+) -> VerifiedArtifactBundle:
+    """Verify every archive byte and replay under independent policy/head anchors."""
+    verified, _, _ = _verify_artifact_bundle_internal(
+        path,
+        authority=authority,
+        expected_head=expected_head,
+        expected_evidence_head=expected_evidence_head,
+        expected_bundle_digest=expected_bundle_digest,
+        limits=limits,
+    )
+    return verified
 
 
 def _info(name: str, size: int) -> zipfile.ZipInfo:

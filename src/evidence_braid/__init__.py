@@ -23,6 +23,7 @@ from .authority import (
     WorkflowTransition,
 )
 from .baselines import BaselineDecision, majority_vote, reliability_weighted_vote
+from .case_artifacts import VerifiedSupportedCaseBundle, verify_supported_case_bundle
 from .case_observation import (
     CheckedObservation,
     ObservationAdapter,
@@ -251,6 +252,7 @@ __all__ = [
     "ValidationError",
     "Verdict",
     "VerifiedArtifactBundle",
+    "VerifiedSupportedCaseBundle",
     "WorkflowAction",
     "WorkflowActor",
     "WorkflowBundle",
@@ -303,6 +305,7 @@ __all__ = [
     "verify_observed_bytes",
     "verify_schema_archive",
     "verify_schema_directory",
+    "verify_supported_case_bundle",
     "write_ledger",
     "write_workflow_bundle",
 ]

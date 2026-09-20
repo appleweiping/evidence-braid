@@ -552,3 +552,13 @@ client/server/auth/API-doc bodies were unavailable and remain unverified here.
 Public deployment, MCP, hosted ingestion, scope-redacted views, identity
 attestation, richer epistemic lifecycle and all other whole-repository gaps stay
 open.
+
+## Portable supported-case verification increment (2026-09-20)
+
+The original `verify_supported_case_bundle` is a bounded local bridge between
+Stage C's three-receipt case and the existing closed artifact archive. It
+rehashes the four archived case objects, recomputes the fixed supported verdict,
+and requires an independently anchored, currently approved scoped workflow.
+This does not close whole-reference bundle, epistemic lifecycle, service,
+identity, witness, deployment or metering parity. The archived journal alone
+does not prove the Stage C claim-before-callback operation history.
