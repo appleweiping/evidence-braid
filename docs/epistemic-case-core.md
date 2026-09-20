@@ -70,8 +70,11 @@ as an autonomous approval gate. The separate retained-byte checker in
 [`claim-checks.md`](claim-checks.md) does recompute its own fixed predicates
 over supplied bytes; it does not make this new case a live observation.
 
-Future stages must bind a trusted registered external adapter to actual
-retained observation bytes, add durable checkpoint/CAS recovery, and verify
-case artifacts alongside an independently pinned workflow/evidence bundle.
+The optional [offline Stage B runner](epistemic-case-observation.md) now binds
+a trusted, registered synchronous adapter to retained observation bytes and
+independently verifies them. It does **not** retroactively strengthen a bare
+Stage A `CaseObservation` or verdict. Later stages must add durable
+checkpoint/CAS recovery and verify case artifacts alongside an independently
+pinned workflow/evidence bundle.
 Any public/hosted service, signed/witnessed checkpoints, identity proof or
 claim of factual truth needs a separate reviewed trust contract.

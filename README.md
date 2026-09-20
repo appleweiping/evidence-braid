@@ -65,6 +65,12 @@ predeclared prediction, declared observation, deterministic digest-comparison
 verdict and accountable decision with exact-scope replay. Its Stage A journal
 does **not** execute a test or verify that any observation bytes exist; do not
 use its supported state alone as an autonomous approval gate.
+The optional [offline observation runner](docs/epistemic-case-observation.md)
+executes a trusted registered adapter, retains and rehashes its actual output,
+and independently checks the verdict. Its
+[`cache-bypass` fixture](src/evidence_braid/examples/cache_bypass_case.py) is
+wheel-runnable without network access; this does not make callback code a
+sandbox or prove a real-world assertion.
 
 The fixed offline schema catalog can also be [published as an atomic directory](docs/schema-directory.md)
 on supported Windows/Linux filesystems, with no-replace semantics, bounded complete verification
