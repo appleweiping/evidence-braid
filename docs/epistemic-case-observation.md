@@ -100,3 +100,7 @@ intent in one live process; no crash/restart or request-ID deduplication is
 claimed. No durable case CAS, closed artifact publication, witness,
 non-equivocation or authenticated service is present. Those are separate
 future trust boundaries.
+
+The separate [Stage C local case store](durable-cases.md) adds a durable
+claim-before-callback path and retained bytes; this Stage B in-memory runner
+itself keeps the process-local limits stated above.

@@ -40,6 +40,15 @@ from .case_observation import (
     run_observation,
     verify_observed_bytes,
 )
+from .case_storage import (
+    CaseStoreCheckpoint,
+    CaseStoreCommit,
+    CaseStoreConflictError,
+    CaseStoreError,
+    SQLiteCaseStore,
+    StoredCase,
+    create_case_store,
+)
 from .check_workflow import CheckedClaim, CheckPolicy, parse_check_policy, verify_claim_checks
 from .checks import (
     CHECK_ENGINE_VERSION,
@@ -169,6 +178,10 @@ __all__ = [
     "CaseReceipt",
     "CaseRole",
     "CaseState",
+    "CaseStoreCheckpoint",
+    "CaseStoreCommit",
+    "CaseStoreConflictError",
+    "CaseStoreError",
     "CaseVerdict",
     "CaseVerdictOutcome",
     "CheckEvaluation",
@@ -224,6 +237,7 @@ __all__ = [
     "RetainedObservation",
     "RobustnessImpact",
     "RobustnessReport",
+    "SQLiteCaseStore",
     "SQLiteLedger",
     "SQLiteWorkflowStore",
     "SchemaCatalog",
@@ -232,6 +246,7 @@ __all__ = [
     "SchemaExport",
     "ScopeGrant",
     "Signal",
+    "StoredCase",
     "StoredWorkflow",
     "ValidationError",
     "Verdict",
@@ -257,6 +272,7 @@ __all__ = [
     "build_provenance",
     "build_workflow",
     "classification_metrics",
+    "create_case_store",
     "create_workflow_store",
     "evaluate",
     "evaluate_checks",

@@ -71,6 +71,9 @@ and independently checks the verdict. Its
 [`cache-bypass` fixture](src/evidence_braid/examples/cache_bypass_case.py) is
 wheel-runnable without network access; this does not make callback code a
 sandbox or prove a real-world assertion.
+The separate [local durable case store](docs/durable-cases.md) adds a
+claim-before-callback SQLite CAS, exact output-byte retention and checked
+verdict after restart. A stranded claim is never automatically re-executed.
 
 The fixed offline schema catalog can also be [published as an atomic directory](docs/schema-directory.md)
 on supported Windows/Linux filesystems, with no-replace semantics, bounded complete verification

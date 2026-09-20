@@ -1,6 +1,8 @@
 """Offline observation must bind actual adapter bytes, not a declared digest."""
 
 import hashlib
+import json
+import sys
 from copy import copy
 from dataclasses import replace
 from threading import Barrier, Event, Thread
@@ -17,6 +19,7 @@ from evidence_braid.examples.cache_bypass_case import (
     make_cache_bypass_adapter,
     run_fixture,
 )
+from evidence_braid.examples.cache_bypass_case import main as cache_bypass_main
 
 ASSERTION = b"The cache is stale."
 INPUT = b'{"incident":"cache","revision":"B"}'
@@ -519,6 +522,34 @@ def test_real_offline_cache_bypass_fixture(source, outcome, observed):
     assert result.observed_bytes == observed
     assert result.observed_sha256 == (digest(observed) if observed is not None else None)
     assert len({result.plan_head, result.observation_head, result.verdict_head}) == 3
+
+
+@pytest.mark.parametrize(
+    "argument, outcome, observed",
+    [
+        (None, "supported", "revision-B"),
+        ("C", "refuted", "revision-C"),
+        ("unavailable", "inconclusive", None),
+    ],
+)
+def test_cache_bypass_example_cli_reports_checked_result(
+    monkeypatch, capsys, argument, outcome, observed
+):
+    monkeypatch.setattr(sys, "argv", ["cache-bypass"] + ([] if argument is None else [argument]))
+    assert cache_bypass_main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["outcome"] == outcome
+    assert report["observed_text"] == observed
+    assert report["observed_sha256"] == (
+        digest(observed.encode("utf-8")) if observed is not None else None
+    )
+    assert report["read_sequence"] == [False, True]
+
+
+def test_cache_bypass_example_cli_rejects_unrecognized_selection(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["cache-bypass", "C", "extra"])
+    assert cache_bypass_main() == 2
+    assert "usage:" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize(
